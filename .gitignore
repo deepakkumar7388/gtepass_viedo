@@ -1,0 +1,12 @@
+node_modules/
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+.idea/
+.vscode/
+build/
+*.iml
+.gradle/
+local.properties
