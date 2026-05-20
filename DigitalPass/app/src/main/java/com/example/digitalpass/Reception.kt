@@ -32,7 +32,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class Reception : AppCompatActivity() {
+class Reception : BaseActivity() {
     private lateinit var galleryLauncher: ActivityResultLauncher<String>
     private lateinit var profileImage: ImageView
     private lateinit var recyclerView: RecyclerView
@@ -138,6 +138,10 @@ class Reception : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    override fun onResume(){
+        super.onResume()
     }
 
 }

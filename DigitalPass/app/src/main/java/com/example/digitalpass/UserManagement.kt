@@ -9,6 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.common.internal.service.Common
 import com.google.android.material.button.MaterialButtonToggleGroup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class UserManagement : AppCompatActivity() {
+class UserManagement : BaseActivity() {
 
     lateinit var searchView: SearchView
      lateinit var roleToggleGroup: MaterialButtonToggleGroup

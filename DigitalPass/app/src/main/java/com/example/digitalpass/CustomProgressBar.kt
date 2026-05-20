@@ -83,7 +83,7 @@ class CustomProgressBar(context: Context, attrs: AttributeSet) : View(context, a
         ringPaint.alpha = 100 // Semi-transparent ring
         
         val radius = width / 3.5f
-        canvas.drawCircle(centerX, centerY, radius, ringPaint)
+        //canvas.drawCircle(centerX, centerY, radius, ringPaint)
 
         // Draw "D"
         canvas.drawText("P", dX, dY + 40f, paint)

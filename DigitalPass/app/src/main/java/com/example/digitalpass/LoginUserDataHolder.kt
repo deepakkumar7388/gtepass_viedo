@@ -3,6 +3,7 @@ package com.example.digitalpass
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -29,6 +30,63 @@ object LoginUserDataHolder {
     lateinit var token: String
 
     var campusForBatchOperation=""
+
+
+    private const val PREFS_NAME = "DigitalPassPrefs"
+    private const val KEY_TOKEN  = "token"
+    // All loginUserData keys we want to persist:
+    private val USER_DATA_KEYS = listOf(
+        "name", "email", "phone", "role", "campus", "department",
+        "batch", "img", "uid", "fathername", "fatherphone"
+    )
+
+    /**
+     * Call this right after a successful login or token-refresh so that
+     * all critical state is persisted to SharedPreferences.
+     */
+    fun saveState(context: Context) {
+        val prefs: SharedPreferences =
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        // Token is already saved by MainActivity / splashScreen, but we
+        // also ensure it is written here for completeness.
+        if (::token.isInitialized) editor.putString(KEY_TOKEN, token)
+        loginUserData?.let { data ->
+            for (key in USER_DATA_KEYS) {
+                editor.putString("ud_$key", data[key] ?: "")
+            }
+        }
+        editor.apply()
+    }
+
+    /**
+     * Persists the campusForBatchOperation variable dynamically.
+     */
+    fun setCampusForBatch(context: Context, campus: String) {
+        campusForBatchOperation = campus
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString("campusForBatchOperation", campus).apply()
+    }
+
+    /**
+     * Attempts to restore [loginUserData] and [token] from SharedPreferences.
+     * Returns true on success, false if no valid session data was found.
+     */
+    fun loadState(context: Context): Boolean {
+        val prefs: SharedPreferences =
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedToken = prefs.getString(KEY_TOKEN, null) ?: return false
+        token = savedToken
+        val restoredData = HashMap<String, String>()
+        for (key in USER_DATA_KEYS) {
+            restoredData[key] = prefs.getString("ud_$key", "") ?: ""
+        }
+        campusForBatchOperation = prefs.getString("campusForBatchOperation", "") ?: ""
+        loginUserData = restoredData
+        return true
+    }
+
+
 
      fun storeFCMToken() {
         //get fcm token and store it

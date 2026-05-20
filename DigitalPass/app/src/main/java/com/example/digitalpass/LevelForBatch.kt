@@ -20,7 +20,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class LevelForBatch : AppCompatActivity() {
+class LevelForBatch : BaseActivity() {
 
     lateinit var search: SearchView
     lateinit var selectedMemberRecyclerView:RecyclerView
@@ -294,5 +294,9 @@ class LevelForBatch : AppCompatActivity() {
         filteredMembers=filteredMembers.filter { !selectedMemberAdapter.levelData.contains(it) }
 
         unselectedMemberAdapter.updateList(filteredMembers as ArrayList<HashMap<String, String>>)
+    }
+
+    override fun onResume(){
+        super.onResume()
     }
 }

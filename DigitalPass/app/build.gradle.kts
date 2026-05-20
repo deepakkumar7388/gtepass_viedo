@@ -84,4 +84,11 @@ dependencies {
     // Apache POI for Excel
     implementation("org.apache.poi:poi:5.2.3")
     implementation("org.apache.poi:poi-ooxml:5.2.3")
+
+    // Osmdroid for OpenStreetMap integration
+    implementation(libs.osmdroid.android)
+    implementation(libs.androidx.preference.ktx)
+
+    // Fused Location Provider
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }

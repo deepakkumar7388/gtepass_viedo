@@ -409,9 +409,9 @@ const GatePassDetailModal = ({ item, onClose, onRefresh, getImageUrl }) => {
   const buildOtherInfo = () => {
     const lines = [`Campus: ${item.campus || '—'}`, `Apply Date: ${item.applyDate || '—'}`];
     if (item.role === 'student' && !isSelf) {
-      if (item.uid)         lines.push(`UID: ${item.uid}`);
-      if (item.batch)       lines.push(`Batch: ${item.batch}`);
-      if (item.fathername)  lines.push(`Father Name: ${item.fathername}`);
+      if (item.uid) lines.push(`UID: ${item.uid}`);
+      if (item.batch) lines.push(`Batch: ${item.batch}`);
+      if (item.fathername) lines.push(`Father Name: ${item.fathername}`);
       if (item.fatherphone) lines.push(`Father Phone: ${item.fatherphone}`);
     }
     if (item.remark && item.remark.trim()) lines.push(`Remarks: ${item.remark}`);
@@ -873,11 +873,11 @@ const Dashboard = ({ onLogout }) => {
       case 'Dashboard':
       default:
         return (
-          <DashboardContent 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
-            dataList={dataList} 
-            loading={loading} 
+          <DashboardContent
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            dataList={dataList}
+            loading={loading}
             onRefresh={fetchData}
             getImageUrl={getImageUrl}
             securityPermission={securityPermission}
@@ -893,10 +893,10 @@ const Dashboard = ({ onLogout }) => {
       <div className="sidebar">
         <div style={{ padding: '2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {userData && userData.img ? (
-            <img 
-              src={getImageUrl(userData.img)} 
-              alt="Profile" 
-              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} 
+            <img
+              src={getImageUrl(userData.img)}
+              alt="Profile"
+              style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }}
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           ) : (
@@ -911,18 +911,18 @@ const Dashboard = ({ onLogout }) => {
         </div>
         <nav style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
           {userRole.toLowerCase() !== 'student' && (
-            <button 
+            <button
               onClick={() => setActiveView('Dashboard')}
-              className="btn btn-outline" 
+              className="btn btn-outline"
               style={{ justifyContent: 'flex-start', background: activeView === 'Dashboard' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'Dashboard' ? '1px solid var(--glass-border)' : 'none' }}>
               🏠 Dashboard
             </button>
           )}
-          
+
           {userRole.toLowerCase() !== 'security guard' && (
-            <button 
+            <button
               onClick={() => setActiveView('MyGatePass')}
-              className="btn btn-outline" 
+              className="btn btn-outline"
               style={{ justifyContent: 'flex-start', background: activeView === 'MyGatePass' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'MyGatePass' ? '1px solid var(--glass-border)' : 'none' }}>
               🪪 My Gate Pass
             </button>
@@ -931,15 +931,15 @@ const Dashboard = ({ onLogout }) => {
           {/* SG Allotment & Batches — admin / principal / hod only */}
           {['admin', 'principal', 'hod'].includes(userRole.toLowerCase()) && (
             <>
-              <button 
+              <button
                 onClick={() => setActiveView('SecurityGuard')}
-                className="btn btn-outline" 
+                className="btn btn-outline"
                 style={{ justifyContent: 'flex-start', background: activeView === 'SecurityGuard' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'SecurityGuard' ? '1px solid var(--glass-border)' : 'none' }}>
                 🔒 SG Allotment
               </button>
-              <button 
+              <button
                 onClick={() => setActiveView('Batches')}
-                className="btn btn-outline" 
+                className="btn btn-outline"
                 style={{ justifyContent: 'flex-start', background: activeView === 'Batches' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'Batches' ? '1px solid var(--glass-border)' : 'none' }}>
                 📋 Batches
               </button>
@@ -948,18 +948,18 @@ const Dashboard = ({ onLogout }) => {
 
           {/* User Management — all management roles */}
           {['admin', 'principal', 'hod', 'faculty'].includes(userRole.toLowerCase()) && (
-            <button 
+            <button
               onClick={() => setActiveView('UserManagement')}
-              className="btn btn-outline" 
+              className="btn btn-outline"
               style={{ justifyContent: 'flex-start', background: activeView === 'UserManagement' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'UserManagement' ? '1px solid var(--glass-border)' : 'none' }}>
               👥 User Management
             </button>
           )}
 
           {userRole.toLowerCase() !== 'student' && (
-            <button 
+            <button
               onClick={() => setActiveView('History')}
-              className="btn btn-outline" 
+              className="btn btn-outline"
               style={{ justifyContent: 'flex-start', background: activeView === 'History' ? 'rgba(255,255,255,0.05)' : 'transparent', border: activeView === 'History' ? '1px solid var(--glass-border)' : 'none' }}>
               📜 History
             </button>
@@ -984,24 +984,24 @@ const Dashboard = ({ onLogout }) => {
               <h3 style={{ margin: 0 }}>My Profile</h3>
               <button onClick={() => setIsProfileModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.5rem' }}>&times;</button>
             </div>
-            
+
             {userData ? (
               <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                 {userData.img && (
                   <div style={{ flex: '0 0 200px', width: '100%' }}>
-                    <img 
-                      src={getImageUrl(userData.img)} 
-                      alt="User" 
-                      style={{ width: '100%', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', objectFit: 'cover', aspectRatio: '3/4', background: 'rgba(255,255,255,0.05)' }} 
+                    <img
+                      src={getImageUrl(userData.img)}
+                      alt="User"
+                      style={{ width: '100%', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', objectFit: 'cover', aspectRatio: '3/4', background: 'rgba(255,255,255,0.05)' }}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   </div>
                 )}
-                
+
                 <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                   {Object.keys(userData).map(key => {
                     if (!userData[key] || key === 'img' || key === 'token' || key === 'password' || key === 'v') return null;
-                    
+
                     return (
                       <div key={key} className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
                         <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'capitalize', marginBottom: '0.25rem' }}>
@@ -1020,7 +1020,7 @@ const Dashboard = ({ onLogout }) => {
                 <p style={{ color: 'var(--text-secondary)' }}>Please log out and log back in to sync your full profile details.</p>
               </div>
             )}
-            
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button className="btn btn-outline" onClick={() => setIsProfileModalOpen(false)}>Close</button>
             </div>

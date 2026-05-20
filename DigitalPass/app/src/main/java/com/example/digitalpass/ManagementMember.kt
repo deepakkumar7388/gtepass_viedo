@@ -42,7 +42,7 @@ import retrofit2.Response
 import java.io.InputStream
 
 
-class ManagementMember : AppCompatActivity() {
+class ManagementMember : BaseActivity() {
 
     private lateinit var excelPickerLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<String>
@@ -144,6 +144,15 @@ class ManagementMember : AppCompatActivity() {
         val userManagementButton = findViewById<MaterialButton>(R.id.userManagementButton)
         userManagementButton.setOnClickListener {
             startActivity(Intent(this, UserManagement::class.java))
+        }
+
+        //edit campus
+        val editCampusButton = findViewById<MaterialButton>(R.id.editCampusButton)
+        if (LoginUserDataHolder.loginUserData?.get("role") == "admin") {
+            editCampusButton.visibility = View.VISIBLE
+        }
+        editCampusButton.setOnClickListener {
+            startActivity(Intent(this, EditCampusActivity::class.java))
         }
 
         //check the history of visitor and gatePass
@@ -449,6 +458,10 @@ class ManagementMember : AppCompatActivity() {
         }
     }
 
+
+    override fun onResume(){
+        super.onResume()
+    }
 
 
 }

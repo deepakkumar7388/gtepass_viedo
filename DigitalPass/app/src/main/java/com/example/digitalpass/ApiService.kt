@@ -151,7 +151,12 @@ interface ApiService {
 
     @POST("/update-password")
     fun updatePassword(@Body hashToUpdatePassword: HashMap<String, String>): Call<String>
-    //
+    @POST("/get-campus-location")
+    fun getCampusLocation(@Body token: String): Call<ArrayList<HashMap<String, Any>>>
 
+    @POST("/save-campus-location")
+    fun saveCampusLocation(@Body campusLocationData: HashMap<String, Any>): Call<ResponseBody>
 
+    @POST("/create-campus-location")
+    fun createCampusLocation(@Body campusLocationData: HashMap<String, Any>): Call<ResponseBody>
 }

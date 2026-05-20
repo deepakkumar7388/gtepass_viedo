@@ -40,7 +40,7 @@ class FirebaseFCMService: FirebaseMessagingService() {
 
         if(remoteMessage.data.isNotEmpty()){
             val data = remoteMessage.data
-            
+
             var notificationId = System.currentTimeMillis().toInt()
             if(data.containsKey("visitorId")) {
                 notificationId = data["visitorId"]?.toIntOrNull() ?: notificationId
@@ -50,7 +50,7 @@ class FirebaseFCMService: FirebaseMessagingService() {
 
 
 
-            // 2. Prepare RemoteViews
+            //  Prepare RemoteViews
             val remoteView = RemoteViews(packageName, R.layout.custom_notification_layout)
 
 
@@ -59,8 +59,8 @@ class FirebaseFCMService: FirebaseMessagingService() {
                 remoteView.setTextViewText(R.id.notificationUserName, data["name"])
 
 
-            // 3. Setup Intent
-            val intent = Intent(this, MainActivity::class.java).apply {
+            // Setup Intent
+            val intent = Intent(this, splashScreen::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             val pendingIntent = PendingIntent.getActivity(this, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
@@ -77,11 +77,11 @@ class FirebaseFCMService: FirebaseMessagingService() {
                 .setContentIntent(pendingIntent)
                 .build()
 
-            // 5. Post initial notification
+            // Post initial notification
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(notificationId, notification)
 
-            // 6. Use Glide with overrides to prevent RemoteViews memory crash
+            // Use Glide with overrides to prevent RemoteViews memory crash
             val target = NotificationTarget(this, R.id.notificationImage, remoteView, notification, notificationId)
 
             Glide.with(this)

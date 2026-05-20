@@ -28,7 +28,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.time.LocalDate
 
-class GatePassDetail : AppCompatActivity() {
+class GatePassDetail : BaseActivity() {
     lateinit var reason: EditText
     lateinit var otherInfoDescription: TextView
     lateinit var gatePass:HashMap<String,String>
@@ -441,4 +441,7 @@ class GatePassDetail : AppCompatActivity() {
         }
     }
 
+    override fun onResume(){
+        super.onResume()
+    }
 }

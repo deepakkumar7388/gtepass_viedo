@@ -34,7 +34,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class SecurityGuard : AppCompatActivity() {
+class SecurityGuard : BaseActivity() {
     private lateinit var galleryLauncher: ActivityResultLauncher<String>
     private lateinit var profileImage: ImageView
     private lateinit var recyclerView: RecyclerView
@@ -232,5 +232,10 @@ class SecurityGuard : AppCompatActivity() {
                     }
                 })
         }
+    }
+
+
+    override fun onResume(){
+        super.onResume()
     }
 }

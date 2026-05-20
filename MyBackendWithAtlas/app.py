@@ -27,6 +27,7 @@ import cloudinary.uploader
 #imports for firebase messaging
 import firebase_admin 
 from firebase_admin import credentials, messaging
+from geopy.distance import geodesic
 
 #initialize firebase admin sdk with service account json file
 cred = credentials.Certificate('digital-pass-fcm-service-account.json')
@@ -92,7 +93,7 @@ def upload_profile_image():
     image_url = upload_image_to_cloudinary(public_id, image_file)
     
     #upload image to cloudinary if image of user is not existing or user want to change the existing image so the existing image will be replaced by new image and url of new image will be updated in database and cloudinary will automatically remove the previous image to save the space in cloudinary
-    if(requester['img'].strip()==""):
+    if requester['img'].strip()=="":
         users_collection.update_one({"token": token}, {"$set": {"img":public_id}})
         
     if image_url:
@@ -104,7 +105,7 @@ def upload_profile_image():
 SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 465))
 SMTP_USER = os.getenv('SMTP_USER', 'yogeshsaini8213@gmail.com')
-SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', 'fxiz tpni mftf qiih')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', 'bxwn vcrg lgpb lmku')
 FROM_EMAIL = os.getenv('FROM_EMAIL', 'digitalpass@DP.com')
 
 @app.route('/')
@@ -285,7 +286,8 @@ def add_new_user():
     data["token"]="" #add empty token for new user
     data["img"]="" #add empty img for new user
     #set random password for new user and send it to user email
-    data["password"]=''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    #data["password"]=''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    data["password"]="student"
     #set campus same as requester campus if requester is not admin
     if requester['role']!="admin":
             data['campus']=requester['campus'] 
@@ -332,7 +334,11 @@ def upload_excel_users():
 
         # set for batch of students and management members
         studentBatch = set()
+        studentBatchUser=[]
         managementMemberBatch = set()
+        managementMemberBatchUser=[]
+
+        existingEmail=[]
 
         # clean up rows from Excel; convert keys to lowercase, strip values, drop NaNs
         cleaned_users = []
@@ -344,7 +350,13 @@ def upload_excel_users():
                 # drop missing values coming from pandas (NaN)
                 if pd.isna(v):
                     continue
-                user[k.lower()] =str(v).strip()
+                
+                # handle floats that represent integer phone numbers
+                if isinstance(v, float) and v.is_integer():
+                    v = int(v)
+                    
+                # strip whitespace from keys
+                user[str(k).strip().lower()] = str(v).strip()
 
 
             # skip row if any required field is missing
@@ -359,49 +371,61 @@ def upload_excel_users():
             if not checkRequsterAndNewUserRoleDepartment(requester, user):
                 continue
 
-            # skip already existing users
-            if users_collection.find_one({"email": user['email']}):
-                continue
+            #store this user email to check
+            existingEmail.append(user["email"])
 
             user["token"] = ""
             user["img"] = ""
-            user["password"] =str(uuid.uuid4())
+            #user["password"] =str(uuid.uuid4())
+            user["password"] ="student"
             
             if requester['role'] != "admin":
                 user['campus'] = requester['campus']
 
             if user['role'] == "student":
-                #check if user batch is already exist in studentBatch set
-                if user["batch"] not in studentBatch:
-                    #if not exist then we will add it in studentBatch set and also add it in departmentBatch collection
-                    studentBatch.add(user['batch'])
-                    if not db["departmentBatch"].find_one({"department": user['department'], "campus": user['campus'], "batches": user['batch']}):
-                        db["departmentBatch"].update_one({"department": user['department'], "campus": user['campus']}, {"$push": {"batches": user['batch']}}, upsert=True)
-
+                # Ensure they have a batch and it hasn't been processed yet
+                if "batch" in user and user["batch"] not in studentBatch:
+                    studentBatch.add(user["batch"])
+                    studentBatchUser.append(user)
             else:
-                #when new added user is not student then we have to create it batch
+                # When new added user is not a student, we must construct their batch first
                 user['batch'] = user['campus'] + "-" + user['department'] + "-" + user['role']
-                #check if user batch is already exist in managementMemberBatch set
+                
+                # Now we check if it has been processed
                 if user['batch'] not in managementMemberBatch:
-                    #if not exist then we will add it in managementMemberBatch set and also add it in managementMemberBatch collection
                     managementMemberBatch.add(user['batch'])
-                    if not db["managementMemberBatch"].find_one({"department": user['department'], "campus": user['campus'], "batches": user['batch']}):
-                        db["managementMemberBatch"].update_one({"department": user['department'], "campus": user['campus']}, {"$push": {"batches": user['batch']}}, upsert=True)
-
+                    managementMemberBatchUser.append(user)
             
 
             cleaned_users.append(user)
 
         users_list = cleaned_users
+
+        #remove that users that are already exist in database from users_list
+        existingUsersEmail=users_collection.find({"email": {"$in": existingEmail}},{"email":1})
+        existingEmail=[user['email'] for user in existingUsersEmail]
+        users_list=[user for user in users_list if user['email'] not in existingEmail]
+
+
+        #add batches in departmentBatch and managementMemberBatch
+        for batch in studentBatchUser:
+            db["departmentBatch"].update_one({"campus":batch["campus"],"department":batch["department"]},{"$addToSet":{"batches":batch["batch"]}},upsert=True)
+        for batch in managementMemberBatchUser:
+            db["managementMemberBatch"].update_one({"campus":batch["campus"],"department":batch["department"]},{"$addToSet":{"batches":batch["batch"]}},upsert=True)
+        
+        
+        
+            
         
         #add users in database
         if len(users_list)>0:
             users_collection.insert_many(users_list)
 
             #send email to added users
-            for user in users_list:
-                thToAddedUser=threading.Thread(target=sendEmail,args=(user['email'],'Account Created in Digital Pass',f"Dear {user['name']},\n\nYour account has been created in Digital Pass.\nYour login credentials are:\nEmail: {user['email']}\nPassword: {user['password']}\n\nPlease change your password after logging in for the first time.\n\nBest regards,\n Digital Pass"),daemon=True)
-                thToAddedUser.start()
+            # Temporarily commented out to prevent thread-spawning server freeze:
+            # for user in users_list:
+            #     thToAddedUser=threading.Thread(target=sendEmail,args=(user['email'],'Account Created in Digital Pass',f"Dear {user['name']},\n\nYour account has been created in Digital Pass.\nYour login credentials are:\nEmail: {user['email']}\nPassword: {user['password']}\n\nPlease change your password after logging in for the first time.\n\nBest regards,\n Digital Pass"),daemon=True)
+            #     thToAddedUser.start()
         return jsonify({"message": "Users added successfully!"}), 200
     
     except Exception as e:
@@ -928,6 +952,31 @@ def enter_visitor():
         "lastUpdatedBy": requester['email']
     })
     db["visitor"].insert_one(visitor)
+
+    #Emit socket events and send notification
+    visitorId_str = str(visitorID)
+    campus_val = requester['campus']
+    department_val = visitor.get('meetDepartment', '')
+    meetEmail_val = visitor.get('meetEmail', '')
+    img_val = publicId
+    name_val = visitor.get('name', '')
+
+    def bg_visitor_insert():
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room="adminroom")
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room=campus_val+"securityguardroom")
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room=campus_val+"receptionroom")
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room=campus_val+"principalroom")
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room=campus_val+department_val+"hodroom")
+        socket.emit("visitorInsert", {"visitorId": visitorId_str}, room=meetEmail_val+"room")
+        notifData={"visitorId": visitorId_str, "img": img_val, "name": name_val}
+        dataExtractingBeforeSendingNotificationForVisitor(
+            status="pending", operationType="insert",
+            lastUpdatedBy=requester['email'],
+            meetEmail=meetEmail_val, campus=campus_val, department=department_val,
+            notificationData=notifData
+        )
+    socket.start_background_task(bg_visitor_insert)
+
     return jsonify({"message": "Visitor entry recorded successfully!"}), 200
 
 
@@ -1004,6 +1053,29 @@ def meet_visitor():
             if 'remark' in visitor:
                 remark=visitor['remark']+"\n \n"+remark
             db["visitor"].update_one({"visitorId":int(data["visitorId"])},{"$set":{"status":"meet","remark":remark,"lastUpdatedBy": requester['email']}})
+
+            #Emit socket and notification
+            vid = str(data["visitorId"])
+            campus = requester['campus']
+            dept = visitor.get('meetDepartment', '')
+            meetEmail = visitor.get('meetEmail', '')
+            img = visitor.get('img', '')
+            name = visitor.get('name', '')
+            def bg_visitor_meet(vid=vid, campus=campus, dept=dept, meetEmail=meetEmail, img=img, name=name, last=requester['email']):
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room="adminroom")
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room=campus+"securityguardroom")
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room=campus+"receptionroom")
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room=campus+"principalroom")
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room=campus+dept+"hodroom")
+                socket.emit("visitorUpdate", {"operation": "meet", "visitorId": vid}, room=meetEmail+"room")
+                dataExtractingBeforeSendingNotificationForVisitor(
+                    status="meet", operationType="statusUpdate",
+                    lastUpdatedBy=last, meetEmail=meetEmail,
+                    campus=campus, department=dept,
+                    notificationData={"visitorId": vid, "img": img, "name": name}
+                )
+            socket.start_background_task(bg_visitor_meet)
+
             return jsonify({"message": "Visitor entry recorded successfully!"}), 200
         
         elif requester['role']=="security guard":
@@ -1022,6 +1094,29 @@ def meet_visitor():
                 remark=visitor['remark']+"\n \n"+remark
             
             db["visitor"].update_one({"visitorId":int(data["visitorId"])},{"$set":{"status":"exit","remark":remark,"lastUpdatedBy": requester['email']}})
+
+            #Emit socket and notification for exit
+            vid = str(data["visitorId"])
+            campus = requester['campus']
+            dept = visitor.get('meetDepartment', '')
+            meetEmail = visitor.get('meetEmail', '')
+            img = visitor.get('img', '')
+            name = visitor.get('name', '')
+            def bg_visitor_exit(vid=vid, campus=campus, dept=dept, meetEmail=meetEmail, img=img, name=name, last=requester['email']):
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room="adminroom")
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room=campus+"securityguardroom")
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room=campus+"receptionroom")
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room=campus+"principalroom")
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room=campus+dept+"hodroom")
+                socket.emit("visitorUpdate", {"operation": "exit", "visitorId": vid}, room=meetEmail+"room")
+                dataExtractingBeforeSendingNotificationForVisitor(
+                    status="exit", operationType="statusUpdate",
+                    lastUpdatedBy=last, meetEmail=meetEmail,
+                    campus=campus, department=dept,
+                    notificationData={"visitorId": vid, "img": img, "name": name}
+                )
+            socket.start_background_task(bg_visitor_exit)
+
             return jsonify({"message": "Visitor exit recorded successfully!"}), 200
     
     return jsonify({"message": "User not found"}), 404
@@ -1082,6 +1177,21 @@ def edit_visitor():
         visitor['lastUpdatedBy']=requester['email']
 
         db["visitor"].update_one({"visitorId": int(visitorId)}, {"$set": visitor})
+
+        #Emit socket for edit
+        vid = str(visitorId)
+        campus = existingVisitor.get('campus',"")
+        dept = existingVisitor.get('meetDepartment', '')
+        meetEmail = existingVisitor.get('meetEmail', '')
+        def bg_visitor_edit(vid=vid, campus=campus, dept=dept, meetEmail=meetEmail):
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room="adminroom")
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room=campus+"securityguardroom")
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room=campus+"receptionroom")
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room=campus+"principalroom")
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room=campus+dept+"hodroom")
+            socket.emit("visitorUpdate", {"operation": "update", "visitorId": vid}, room=meetEmail+"room")
+        socket.start_background_task(bg_visitor_edit)
+
         return jsonify({"message": "Visitor details updated successfully!"}), 200
     
     return jsonify({"message": "User not found"}), 404
@@ -1091,19 +1201,11 @@ def edit_visitor():
 # we will use flask socketio for live syncing and we will emit event from server to client whenever there is any change in visitor collection like new visitor entry, visitor meet, visitor exit and visitor edit, 
 # so that client can listen to these events and update the visitor list in real time without refreshing the page
 
-socket=SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
-
-watcher_started = False
+socket=SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", message_queue=os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
 
 @socket.on("connect")
 def connect():
-    global watcher_started
     print("user connected")
-    if not watcher_started:
-        print("Starting background database watchers...")
-        socket.start_background_task(lambda: start_watcher(watch_visitor_collection))
-        socket.start_background_task(lambda: start_watcher(watchGatePassCollection))
-        watcher_started = True
 
 #to joinRoom by using users token
 @socket.on("joinRoom")
@@ -1131,87 +1233,7 @@ def joinRoom(data):
         print("User not found for joining room")
 
 
-def watch_visitor_collection():
-    #we have to fetch minimal visitor data
-    #also fetch operationType
-    #we have also get updated field in case of update operation
-    pipeline=[
-        {"$match": {"operationType": {"$in": ["insert", "update"]}}},
 
-        {"$project": {"operationType": 1, "fullDocument.visitorId": 1, "fullDocument.status": 1, "fullDocument.campus": 1, "fullDocument.meetDepartment": 1, "fullDocument.meetEmail": 1,"fullDocument.img":1,"fullDocument.name":1,"fullDocument.lastUpdatedBy": 1, "updateDescription": 1}}
-        
-    ]
-
-    try:
-        print("Creating watch stream on visitor collection...")
-        with db["visitor"].watch(pipeline, full_document='updateLookup') as stream:
-            for change in stream:
-                try:
-                    
-                    operation = change.get('operationType')
-                    full_doc = change.get('fullDocument', {})
-                    updatedFields = change.get('updateDescription', {}).get('updatedFields', {})
-                    
-                    if not full_doc:
-                        print(" No fullDocument found, skipping...")
-                        continue
-                    
-                    visitorId = str(full_doc.get('visitorId'))
-                    status = full_doc.get('status')
-                    campus = full_doc.get('campus')
-                    department = full_doc.get('meetDepartment')  
-                    meetEmail = full_doc.get('meetEmail')
-                    
-
-                    if operation == "update":
-                        if "status" in updatedFields:
-                            operation=status
-
-                        
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room="adminroom")
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room=campus+"securityguardroom")
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room=campus+"receptionroom")
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room=campus+"principalroom")
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room=campus+department+"hodroom")
-                        socket.emit("visitorUpdate", {"operation": operation, "visitorId": visitorId}, room=meetEmail+"room")
-                        print(f"Emitted visitor Update")
-
-                        #check there is any upadted field like meetEmail and status
-                        operationType=""
-                        if "meetEmail" in updatedFields:
-                            operationType="meetEmailUpdate"
-                        elif "status" in updatedFields:
-                            operationType="statusUpdate"
-
-                        if operationType!="":
-                            dataExtractingBeforeSendingNotificationForVisitor(status=status,operationType=operationType,lastUpdatedBy=full_doc.get("lastUpdatedBy"),meetEmail=meetEmail,campus=campus,department=department,notificationData={"visitorId": visitorId,"img":full_doc.get("img"),"name":full_doc.get("name")})
-                        
-                    
-                    elif operation == "insert":
-                        if campus and department and meetEmail:
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room="adminroom")
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room=campus+"securityguardroom")
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room=campus+"receptionroom")
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room=campus+"principalroom")
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room=campus+department+"hodroom")
-                            socket.emit("visitorInsert", {"visitorId": visitorId}, room=meetEmail+"room")
-                            print("Emitted visitor Insert")
-
-                            dataExtractingBeforeSendingNotificationForVisitor(status=status,operationType="insert",lastUpdatedBy=full_doc.get("lastUpdatedBy"),meetEmail=meetEmail,campus=campus,department=department,notificationData={"visitorId": visitorId,"img":full_doc.get("img"),"name":full_doc.get("name")})
-                        else:
-                            print("Cannot emit: missing campus, department, or meetEmail")
-                except Exception as e:
-                    print(f"Error processing change: {e}")
-                    import traceback
-                    traceback.print_exc()
-    except OperationFailure as e:
-        print(f"OperationFailure in watch stream: {e}")
-        return
-    except Exception as e:
-        print(f"Unexpected error in watch_visitor_collection: {e}")
-        import traceback
-        traceback.print_exc()
-        return
 
 
 #to get recent updated visitor
@@ -1335,6 +1357,31 @@ def sendNotification(email,notificationData):
         print("User not found or FCM token missing")
 
 
+
+#to check location of user
+def checkLocation(center_point, user_point, radius):
+    # Calculate the distance between the two points
+    distance = geodesic(center_point, user_point).meters
+    # Check if the user is within the radius
+    if distance <= radius:
+        return True
+    else:
+        return False
+
+
+#to dynamically expire old approved gate passes
+def expire_old_gate_passes():
+    try:
+        one_hour_ago = datetime.now(ZoneInfo("Asia/Kolkata")) - timedelta(hours=1)
+        db["gatePass"].update_many({
+            "status": "approved", 
+            "approvedTime": {"$lt": one_hour_ago}
+        }, {"$set": {"status": "expired"}})
+    except Exception as e:
+        print("Error expiring gate passes:", e)
+
+
+
 #to apply for gate pass
 @app.route('/apply-for-gate-pass', methods=['POST'])
 def apply_for_gate_pass():
@@ -1349,6 +1396,24 @@ def apply_for_gate_pass():
         #check this user have batch or not
         if "batch" not in requester or requester["batch"]=="":
             return jsonify({"message": "Batch is not found"}), 404
+
+        #check the user is in campus or not
+        campusLocation=db["campusLocation"].find_one({"campus":requester["campus"]}, {"_id":0,"latitude":1,"longitude":1,"radius":1})
+        if not campusLocation:
+            return jsonify({"message": "Campus location not found"}), 404
+            
+        if "latitude" not in data or "longitude" not in data:
+            return jsonify({"message": "user location is required"}), 400
+            
+        campusGeoPoint=(float(campusLocation["latitude"]),float(campusLocation["longitude"]))
+        userGeoPoint=(float(data["latitude"]),float(data["longitude"]))
+
+        if checkLocation(campusGeoPoint,userGeoPoint,float(campusLocation["radius"]))==False:
+            return jsonify({"message": "You are not in campus"}), 400
+            
+        data.pop("latitude", None)
+        data.pop("longitude", None)
+        
 
 
         #here we have to check if this user is student then it must contain uid,fathername,fatherphone
@@ -1392,6 +1457,25 @@ def apply_for_gate_pass():
         db["gatePass"].insert_one(gatePass)
         #update last gate pass date in users collection for this user
         users_collection.update_one({"email": requester["email"]}, {"$set": {"lastGatePassDate": datetime.now(ZoneInfo("Asia/Kolkata"))}})
+
+        #Emit socket + notifications after gate pass insert
+        gid = str(gatePassID)
+        campus = requester["campus"]
+        level1 = levels["level1"]
+        level2 = levels["level2"]
+        img = "profile_images/" + requester["email"]
+        name = requester["name"]
+        def bg_gp_insert(gid=gid, campus=campus, level1=level1, level2=level2, img=img, name=name):
+            socket.emit("gatePassInsert", {"gatePassId": gid}, room="adminroom")
+            socket.emit("gatePassInsert", {"gatePassId": gid}, room=campus+"principalroom")
+            for em in level1:
+                socket.emit("gatePassInsert", {"gatePassId": gid}, room=em+"room")
+            for em in level2:
+                socket.emit("gatePassInsert", {"gatePassId": gid}, room=em+"room")
+            for em in level1:
+                sendNotification(em, {"title": "New Gate Pass Application", "body": f"New gate pass application #{gid} for you, please check the details", "gatePassId": gid, "img": img, "name": name})
+        socket.start_background_task(bg_gp_insert)
+
         #create gate pass data to send to the user
         gatePass.pop("_id", None)
         gatePass.pop("level1",None)
@@ -1409,6 +1493,7 @@ def apply_for_gate_pass():
 #to get recent self user gate pass based on token
 @app.route('/get-self-user-gate-pass', methods=['POST'])
 def get_recent_self_user_gate_pass():
+    expire_old_gate_passes()
     print("Received a request to /get-recent-self-user-gate-pass")
     data = request.json 
     requester = users_collection.find_one({"token": data})
@@ -1463,6 +1548,19 @@ def edit_gate_pass_by_self_user():
         if gatePass["status"]!="pending" or gatePass["applyDate"].date()!=datetime.now().date():
             return jsonify({"message": "You can not edit this gate pass"}), 400
         db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"reason": data["reason"],"lastUpdatedBy": requester["email"]}})
+        _gid = str(data["gatePassId"])
+        _campus = gatePass.get("campus", "")
+        _level1 = gatePass.get("level1", [])
+        _level2 = gatePass.get("level2", [])
+        def _bg_gp_self_edit(gid=_gid, campus=_campus, level1=_level1, level2=_level2):
+            upd = {"gatePassId": gid, "reason": data["reason"]}
+            socket.emit("gatePassUpdate", upd, room="adminroom")
+            socket.emit("gatePassUpdate", upd, room=campus+"principalroom")
+            for em in level1:
+                socket.emit("gatePassUpdate", upd, room=em+"room")
+            for em in level2:
+                socket.emit("gatePassUpdate", upd, room=em+"room")
+        socket.start_background_task(_bg_gp_self_edit)
         return jsonify({"message": "Gate pass reason updated successfully!"}), 200
     else:
         return jsonify({"message":"User not found"}),404
@@ -1471,6 +1569,7 @@ def edit_gate_pass_by_self_user():
 #to get recent gate pass list on the basis of user role and if that user email in level1 or level2 of gate pass then only show that gate pass to user otherwise not show that gate pass to user
 @app.route('/get-recent-gate-pass-list', methods=['POST'])
 def get_recent_gate_pass_list():
+    expire_old_gate_passes()
     print("Received a request to /get-recent-gate-pass-list")
     data = request.json 
     requester = users_collection.find_one({"token": data})
@@ -1533,6 +1632,24 @@ def reject_gate_pass():
 
             remark=gatePass["remark"]+"\n \n"+remark
             db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"status": "rejected","remark": remark,"lastUpdatedBy": requester["email"]}})
+            gid = str(data["gatePassId"])
+            campus = gatePass.get("campus", "")
+            level1 = gatePass.get("level1", [])
+            level2 = gatePass.get("level2", [])
+            applyEmail = gatePass.get("applyEmail", "")
+            img = "profile_images/" + applyEmail
+            requesterName = requester["name"]
+            applyName_doc = users_collection.find_one({"email": applyEmail}, {"_id": 0, "name": 1})
+            applyName = applyName_doc["name"] if applyName_doc else applyEmail
+            def bg_gp_reject(gid=gid, campus=campus, level1=level1, level2=level2, applyEmail=applyEmail, img=img, applyName=applyName, requesterName=requesterName):
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "rejected"}, room="adminroom")
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "rejected"}, room=campus+"principalroom")
+                for em in level1:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "rejected"}, room=em+"room")
+                for em in level2:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "rejected"}, room=em+"room")
+                sendNotification(applyEmail, {"title": "Gate Pass Rejected", "body": f"Your gate pass #{gid} has been rejected by {requesterName}", "gatePassId": gid, "img": img, "name": applyName})
+            socket.start_background_task(bg_gp_reject)
             return jsonify({"message": "Gate pass rejected successfully!"}), 200
         else:
             return jsonify({"message": "You are not authorized to reject this gate pass"}), 403
@@ -1557,16 +1674,48 @@ def approve_gate_pass():
         if "tgRemark" not in gatePass and "tgRemark" not in data:
             return jsonify({"message": "TG remark is required for approving this gate pass"}), 400
         
+        # shared vars for bg tasks
+        gid = str(data["gatePassId"])
+        campus = gatePass.get("campus", "")
+        level1 = gatePass.get("level1", [])
+        level2 = gatePass.get("level2", [])
+        applyEmail = gatePass.get("applyEmail", "")
+        img = "profile_images/" + applyEmail
+        applyName_doc = users_collection.find_one({"email": applyEmail}, {"_id": 0, "name": 1})
+        applyName = applyName_doc["name"] if applyName_doc else applyEmail
+        requesterName = requester["name"]
+        requesterEmail = requester["email"]
+
         if requester["role"]=="admin" or requester["role"]=="principal" or requester["email"] in gatePass["level2"]:
             if gatePass["status"]!="pending" and gatePass["status"]!="approving":
                 return jsonify({"message": "Gate pass is not available for approving"}), 400
             remark=f"Gate pass approved by {requester['name']} at {datetime.now(ZoneInfo('Asia/Kolkata')).strftime('%H:%M:%S')}"
             remark=gatePass["remark"]+"\n \n"+remark
             if "tgRemark" in data:
-                remark=remark+"\n with TG remark"
+                remark=remark+"\n with approver remark"
                 db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"tgRemark": data["tgRemark"],"status": "approved","remark": remark,"lastUpdatedBy": requester["email"]}})
             else:
                 db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"status": "approved","remark": remark,"lastUpdatedBy": requester["email"]}})
+            allotted=db["allotment"].find_one({"campus": campus},{"_id":0,"security":1})
+            def _bg_approved(gid=gid, campus=campus, level1=level1, level2=level2, applyEmail=applyEmail, img=img, applyName=applyName, requesterName=requesterName, allotted=allotted):
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approved"}, room="adminroom")
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approved"}, room=campus+"principalroom")
+                socket.emit("gatePassInsert", {"gatePassId": gid}, room=campus+"securityguardroom")
+                for em in level1:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approved"}, room=em+"room")
+                for em in level2:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approved"}, room=em+"room")
+                sendNotification(applyEmail, {"title": "Gate Pass Approved", "body": f"Your gate pass #{gid} has been approved", "gatePassId": gid, "img": img, "name":applyName})
+                for em in level1:
+                    if em != requesterEmail:
+                        sendNotification(em, {"title": "Gate Pass Approved", "body": f"Gate pass #{gid} approved", "gatePassId": gid, "img": img, "name": applyName})
+                for em in level2:
+                    if em != requesterEmail:
+                        sendNotification(em, {"title": "Gate Pass Approved", "body": f"Gate pass #{gid} approved", "gatePassId": gid, "img": img, "name": applyName})
+                if allotted and "security" in allotted:
+                    for g in allotted["security"]:
+                        sendNotification(g, {"title": "Gate Pass Approved", "body": f"Gate pass #{gid} approved for your campus, prepare for exit marking", "gatePassId": gid, "img": img, "name": applyName})
+            socket.start_background_task(_bg_approved)
             return jsonify({"message": "Gate pass approved successfully!"}), 200
         
         elif requester["email"] in gatePass["level1"]:
@@ -1574,24 +1723,54 @@ def approve_gate_pass():
                 return jsonify({"message": "Gate pass is not available for approving"}), 400
             remark=f"Gate pass marked as approving by {requester['name']} at {datetime.now(ZoneInfo('Asia/Kolkata')).strftime('%H:%M:%S')}"
             remark=gatePass["remark"]+"\n \n"+remark
-            
             remark=remark+"\n with TG remark"
             db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"tgRemark": data["tgRemark"],"status": "approving","remark": remark,"lastUpdatedBy": requester["email"]}})
-            
+            def bg_approving(gid=gid, campus=campus, level1=level1, level2=level2, applyEmail=applyEmail, img=img, applyName=applyName, requesterEmail=requesterEmail):
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approving"}, room="adminroom")
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approving"}, room=campus+"principalroom")
+                for em in level1:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approving"}, room=em+"room")
+                for em in level2:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "approving"}, room=em+"room")
+
+                sendNotification(applyEmail, {"title": "Gate Pass Marked as Approving", "body": f"Your gate pass #{gid} is marked approving, waiting for final approval", "gatePassId": gid, "img": img, "name": applyName})
+                for em in level1:
+                    if em != requesterEmail:
+                        sendNotification(em, {"title": "Gate Pass Marked as Approving", "body": f"Gate pass #{gid} marked approving", "gatePassId": gid, "img": img, "name": applyName})
+                for em in level2:
+                    if em != requesterEmail:
+                        sendNotification(em, {"title": "Gate Pass Marked as Approving", "body": f"Gate pass #{gid} marked approving, please give final approval", "gatePassId": gid, "img": img, "name": applyName})
+            socket.start_background_task(bg_approving)
             return jsonify({"message": "Gate pass marked as approving successfully!"}), 200
         
         elif requester["role"]=="security guard":
             if gatePass["status"]!="approved":
                 return jsonify({"message": "Gate pass is not available for exit marking"}), 400
-            
-            #check the allotement of security guard for this campus
             allotted=db["allotment"].find_one({"campus": requester['campus']},{"_id":0,"security":1})
             if not (allotted and requester['email'] in allotted["security"]):
                 return jsonify({"message": "You are not authorized to mark exit for this gate pass"}), 403
             remark=f"Gate pass exit marked by {requester['name']} at {datetime.now(ZoneInfo('Asia/Kolkata')).strftime('%H:%M:%S')}"
             remark=gatePass["remark"]+"\n \n"+remark
-
             db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": {"status": "exit","remark": remark,"lastUpdatedBy": requester["email"]}})
+            def bg_exit(gid=gid, campus=campus, level1=level1, level2=level2, applyEmail=applyEmail, img=img, applyName=applyName, allotted=allotted):
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "exit"}, room="adminroom")
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "exit"}, room=campus+"principalroom")
+                socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "exit"}, room=campus+"securityguardroom")
+                for em in level1:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "exit"}, room=em+"room")
+                for em in level2:
+                    socket.emit("gatePassStatusUpdate", {"gatePassId": gid, "status": "exit"}, room=em+"room")
+
+                sendNotification(applyEmail, {"title": "You are exited successfully", "body": f"Your gate pass #{gid} has been marked as exit by security guard", "gatePassId": gid, "img": img, "name": applyName})
+                for em in level1:
+                    sendNotification(em, {"title": "Gate Pass Exit Marked", "body": f"Gate pass #{gid} exit marked by security guard", "gatePassId": gid, "img": img, "name": applyName})
+                for em in level2:
+                    sendNotification(em, {"title": "Gate Pass Exit Marked", "body": f"Gate pass #{gid} exit marked by security guard", "gatePassId": gid, "img": img, "name": applyName})
+                if allotted and "security" in allotted:
+                    for g in allotted["security"]:
+                        if g != requesterEmail:
+                            sendNotification(g, {"title": "Gate Pass Exit Marked", "body": f"Gate pass #{gid} exit marked", "gatePassId": gid, "img": img, "name": applyName})
+            socket.start_background_task(bg_exit)
             return jsonify({"message": "Gate pass exit marked successfully!"}), 200
         
     return jsonify({"message":"User not found"}),404
@@ -1600,6 +1779,7 @@ def approve_gate_pass():
 #to edit gate pass reason or tgRemark by approver when gate pass status is pending or approving
 @app.route('/edit-gate-pass', methods=['POST'])
 def edit_gate_pass():
+    expire_old_gate_passes()
     print("Received a request to /edit-gate-pass")
     data = request.json 
     requester = users_collection.find_one({"token": data["token"]})
@@ -1621,211 +1801,32 @@ def edit_gate_pass():
                 remark=remark+"\n with TG remark"
             updateData["remark"]=remark
             db["gatePass"].update_one({"gatePassId": int(data["gatePassId"])}, {"$set": updateData})
+            gid = str(data["gatePassId"])
+            campus = gatePass.get("campus", "")
+            level1 = gatePass.get("level1", [])
+            level2 = gatePass.get("level2", [])
+            upd = {"gatePassId": gid}
+            if "reason" in data:
+                upd["reason"] = data["reason"]
+            if "tgRemark" in data:
+                upd["tgRemark"] = data["tgRemark"]
+            def bg_gp_edit(gid=gid, campus=campus, level1=level1, level2=level2, upd=upd):
+                socket.emit("gatePassUpdate", upd, room="adminroom")
+                socket.emit("gatePassUpdate", upd, room=campus+"principalroom")
+                for em in level1:
+                    socket.emit("gatePassUpdate", upd, room=em+"room")
+                for em in level2:
+                    socket.emit("gatePassUpdate", upd, room=em+"room")
+            socket.start_background_task(bg_gp_edit)
             return jsonify({"message": "Gate pass updated successfully!"}), 200
 
 
-#now we have to implement live syncing part for gatePass collection
-def watchGatePassCollection():
-    pipeline=[
-        {"$match": {"operationType": {"$in": ["update","insert"]}}},
-        {"$project":{"operationType":1,"fullDocument.gatePassId":1,"fullDocument.status":1,"fullDocument.applyEmail":1,"fullDocument.campus":1,"fullDocument.lastUpdatedBy":1,"fullDocument.level1":1,"fullDocument.level2":1,"updateDescription":1}}
-    ]
-    with db["gatePass"].watch(pipeline, full_document='updateLookup')as stream:
-        for change in stream:
-            try:
-                print("Change detected in gatePass collection")
-                operation=change.get("operationType")
-                full_doc=change.get("fullDocument",{})
-                updatedFields=change.get("updateDescription",{}).get("updatedFields",{})
-                if not full_doc:
-                    print("No fullDocument found, skipping...")
-                    continue
-                gatePassId=str(full_doc.get("gatePassId"))
-                status=full_doc.get("status")
-                campus=full_doc.get("campus")
-                level1=full_doc.get("level1",[])
-                level2=full_doc.get("level2",[])
-
-                #img for apply user
-                img="profile_images/"+full_doc.get("applyEmail")
-
-                #for insert operation 
-                if operation=="insert":
-                    socket.emit("gatePassInsert",{"gatePassId": gatePassId},room="adminroom")
-                    socket.emit("gatePassInsert",{"gatePassId": gatePassId},room=campus+"principalroom")
-                    for level1Email in level1:
-                        socket.emit("gatePassInsert",{"gatePassId": gatePassId},room=level1Email+"room")
-                    for level2Email in level2:
-                        socket.emit("gatePassInsert",{"gatePassId": gatePassId},room=level2Email+"room")
-                    
-                    #send the notification to level1 approver
-                    applyUserName=users_collection.find_one({"email": full_doc.get("applyEmail")},{"_id":0,"name":1})["name"]   
-                    for level1Email in level1:
-                        notificationData={
-                            "title":"New Gate Pass Application",
-                            "body":f"There is new gate pass application with gate pass id {gatePassId} for you, please check the details",
-                            "gatePassId": gatePassId,
-                            "img": img,
-                            "name": applyUserName
-                        }
-                        sendNotification(level1Email, notificationData)
-
-                else:
-                    #we have to check there is any updated field like status
-                    if "status" not in updatedFields:
-                        #the update field can be reason and tgRemark we have to send this data in real time update
-                        updatedGatePassData={"gatePassId": gatePassId}
-                        if "reason" in updatedFields:
-                            updatedGatePassData["reason"]=updatedFields["reason"]
-                        if "tgRemark" in updatedFields:
-                            updatedGatePassData["tgRemark"]=updatedFields["tgRemark"]
-
-                        
-                        socket.emit("gatePassUpdate", updatedGatePassData, room="adminroom")
-                        socket.emit("gatePassUpdate", updatedGatePassData, room=campus+"principalroom")
-                        for level1Email in level1:
-                            socket.emit("gatePassUpdate", updatedGatePassData, room=level1Email+"room")
-                        for level2Email in level2:
-                            socket.emit("gatePassUpdate", updatedGatePassData, room=level2Email+"room")
-                    else:
-                        #when the status is updated then only we have to send current status and gatePassId
-                        socket.emit("gatePassStatusUpdate", {"gatePassId": gatePassId, "status": status}, room="adminroom")
-                        socket.emit("gatePassStatusUpdate", {"gatePassId": gatePassId, "status": status}, room=campus+"principalroom")
-                        for level1Email in level1:
-                            socket.emit("gatePassStatusUpdate", {"gatePassId": gatePassId, "status": status}, room=level1Email+"room")
-                        for level2Email in level2:
-                            socket.emit("gatePassStatusUpdate", {"gatePassId": gatePassId, "status": status}, room=level2Email+"room")
-                        
-                        #if status is updated to approved then we have sync it to security guard
-                        if status=="approved":
-                            #then we will emit socket with gatePass inserted
-                            socket.emit("gatePassInsert",{"gatePassId": gatePassId},room=campus+"securityguardroom")
-                        elif status=="exit":
-                            #then we will emit socket with gatePass status update to exit
-                            socket.emit("gatePassStatusUpdate", {"gatePassId": gatePassId, "status": status}, room=campus+"securityguardroom")
 
 
-                        #if status is updated then we will perform some operation based on status like approving,approved,exit and rejected,here we will send notification to the user like applyEmail,level1,level2 approver also we send notifiction to allotted security guard for this campus
-                        allotted=db["allotment"].find_one({"campus": campus},{"_id":0,"security":1})
 
-                        applyUserName=users_collection.find_one({"email": full_doc.get("applyEmail")},{"_id":0,"name":1})["name"]
-
-                        if status=="approving":
-                            #we have to send notification applyEmail,level1 and level2 user
-                            #for applyEmail
-                            sendNotification(full_doc.get("applyEmail"), {
-                                "title": "Gate Pass Marked as Approving",
-                                "body": f"Your gate pass application with gate pass id {gatePassId} has been marked as approving by {full_doc.get('lastUpdatedBy')}, please wait for final approval",
-                                "gatePassId": gatePassId,
-                                "img": img,
-                                "name": applyUserName
-                            })
-                            #for level1 approver
-                            for level1Email in level1:
-                                if level1Email!=full_doc.get("lastUpdatedBy"):
-                                    sendNotification(level1Email, {
-                                        "title": "Gate Pass Marked as Approving",
-                                        "body": f"Gate pass application with gate pass id {gatePassId} has been marked as approving by {full_doc.get('lastUpdatedBy')}",
-                                        "gatePassId": gatePassId,
-                                        "img": img,
-                                        "name": applyUserName
-                                    })
-
-                            #for level2 approver
-                            for level2Email in level2:
-                                sendNotification(level2Email, {
-                                    "title": "Gate Pass Marked as Approving",
-                                    "body": f"Gate pass application with gate pass id {gatePassId} has been marked as approving by {full_doc.get('lastUpdatedBy')}, please mark approved for final approval",
-                                    "gatePassId": gatePassId,
-                                    "img": img,
-                                    "name": applyUserName
-                                })
-
-                        elif status=="approved":
-                            #we have to send notification to applyEmail,level1 and level2 approver and also security guard of this campus
-                            #for applyEmail
-                            sendNotification(full_doc.get("applyEmail"), {
-                                "title": "Gate Pass Approved",
-                                "body": f"Your gate pass application with gate pass id {gatePassId} has been approved, please check the details",
-                                "gatePassId": gatePassId,
-                                "img": img,
-                                "name": applyUserName
-                            })
-                            #for level1 approver
-                            for level1Email in level1:
-                                if level1Email!=full_doc.get("lastUpdatedBy"):
-                                    sendNotification(level1Email, {
-                                        "title": "Gate Pass Approved",
-                                        "body": f"Gate pass application with gate pass id {gatePassId} has been approved by {full_doc.get('lastUpdatedBy')}",
-                                        "gatePassId": gatePassId,
-                                        "img": img,
-                                        "name": applyUserName
-                                    })
-
-                            #for level2 approver
-                            for level2Email in level2:
-                                if level2Email!=full_doc.get("lastUpdatedBy"):
-                                    sendNotification(level2Email, {
-                                        "title": "Gate Pass Approved",
-                                        "body": f"Gate pass application with gate pass id {gatePassId} has been approved by {full_doc.get('lastUpdatedBy')}",
-                                        "gatePassId": gatePassId,
-                                        "img": img,
-                                        "name": applyUserName
-                                    })
-                            
-                            #for security guard
-                            if allotted and "security" in allotted:
-                                for guardEmail in allotted["security"]:
-                                    sendNotification(guardEmail, {
-                                        "title": "Gate Pass Approved",
-                                        "body": f"Gate pass application with gate pass id {gatePassId} has been approved for your campus, please check the details and prepare for gate pass exit marking",
-                                        "gatePassId": gatePassId,
-                                        "img": img,
-                                        "name": applyUserName
-                                    })
-                                        
-                        elif status=="exit":
-                            #for applyEmail
-                            sendNotification(full_doc.get("applyEmail"), {
-                                "title": "You are exited successfully",
-                                "body": f"Your gate pass application with gate pass id {gatePassId} has been marked as exit by security guard, please check the details",
-                                "gatePassId": gatePassId,
-                                "img": img,
-                                "name": applyUserName
-                            })
-                            #for level1 approver
-                            for level1Email in level1:
-                                sendNotification(level1Email,{"title":"Gate Pass Exit Marked","body": f"Gate pass application with gate pass id {gatePassId} has been marked as exit by security guard","gatePassId": gatePassId,"img": img,"name": applyUserName})
-                            #for level2 approver
-                            for level2Email in level2:
-                                sendNotification(level2Email,{"title":"Gate Pass Exit Marked","body": f"Gate pass application with gate pass id {gatePassId} has been marked as exit by security guard","gatePassId": gatePassId,"img": img,"name": applyUserName})
-                            
-                            #for other security also
-                            if allotted and "security" in allotted:
-                                for guardEmail in allotted["security"]:
-                                    if guardEmail!=full_doc.get("lastUpdatedBy"):
-                                        sendNotification(guardEmail,{"title":"Gate Pass Exit Marked","body": f"Gate pass application with gate pass id {gatePassId} has been marked as exit by security guard","gatePassId": gatePassId,"img": img,"name": applyUserName})
-
-                        elif status=="rejected":
-                            #we have to notify only applyEmail
-                            sendNotification(full_doc.get("applyEmail"), {
-                                "title": "Gate Pass Rejected",
-                                "body": f"Your gate pass application with gate pass id {gatePassId} has been rejected by {full_doc.get('lastUpdatedBy')}",
-                                "gatePassId": gatePassId,
-                                "img": img,
-                                "name": applyUserName
-                            })
-
-            
-            except Exception as e:
-                print(f"Error processing change in gatePass collection: {e}")
-                import traceback
-                traceback.print_exc()
-
-
-#to get recent updated gate pass by gatePassId
 @app.route('/get-recent-updated-gate-pass', methods=['POST'])
 def get_recent_updated_gate_pass():
+    expire_old_gate_passes()
     print("Received a request to /get-recent-updated-gate-pass")
     data = request.json 
     requester = users_collection.find_one({"token": data["token"]})
@@ -1917,6 +1918,7 @@ def get_visitor_list_history():
 #but here we fetch passes like (privous dates gate pass)+(current date gate pass with exit and rejected status)
 @app.route('/get-gate-pass-list-history', methods=['POST'])
 def get_gate_pass_list_history():
+    expire_old_gate_passes()
     print("Received a request to /get-gate-pass-list-history")
     data = request.json
     #for without date we have fromDate="" or toDate="" and for with date we have yyyy-mm-dd format in fromDate and toDate
@@ -2050,31 +2052,51 @@ def update_password():
             return jsonify({"message":"No verification code found for this user"}),404
 
 
+#to get campusLocation
+@app.route('/get-campus-location', methods=['POST'])
+def get_campus_location():
+    print("Received a request to /get-campus-location")
+    requester=users_collection.find_one({"token":request.json})
+    if requester and requester["role"]=="admin":
+        campusLocationList=db["campusLocation"].find({},{"_id":0})
+        return jsonify(list(campusLocationList)),200
+    else:
+        return jsonify({"message":"User not found"}),404
 
+#to save campus location
+@app.route('/save-campus-location', methods=['POST'])
+def save_campus_location():
+    print("Received a request to /save-campus-location")
+    data=request.json
+    requester=users_collection.find_one({"token":data["token"]})
+    if requester and requester["role"]=="admin":
+        data.pop("token")
+        db["campusLocation"].update_one({"campus":data["campus"]},{"$set":data})
+        return jsonify({"message":"Campus location saved successfully"}),200
+    else:
+        return jsonify({"message":"User not found"}),404
 
-
+#to create campus location
+@app.route('/create-campus-location', methods=['POST'])
+def create_campus_location():
+    print("Received a request to /create-campus-location")
+    data=request.json
+    requester=users_collection.find_one({"token":data["token"]})
+    if requester and requester["role"]=="admin":
+        data.pop("token")
+        db["campusLocation"].update_one({"campus":data["campus"]},{"$set":data},upsert=True)
+        #insert this campus name in campus collection if not present,in campus collection we have campus array so insert this campus name in campus array
+        if not db["campus"].find_one({"campus":data["campus"]}):
+            db["campus"].update_one({},{"$push":{"campus":data["campus"]}})
+        return jsonify({"message":"Campus location created successfully"}),200
+    else:
+        return jsonify({"message":"User not found"}),404
 
 ##################
 
 
 
-# yogeshsaini7172@gmail.com
-# Move background tasks outside __main__ so Gunicorn runs them
-def start_watcher(func):
-    """Helper to keep watchers running even if they fail due to connection drops"""
-    while True:
-        try:
-            func()
-        except Exception as e:
-            print(f"Watcher {func.__name__} failed, restarting in 5s... Error: {e}")
-            eventlet.sleep(5)
-
-# Background tasks are now started in the 'connect' event to ensure 
-# they only run once the server is fully initialized by Gunicorn.
-
 if __name__ == '__main__':
-    
-    #we have to create a thread for watching changes in visitor collection and whenever there is any change in visitor collection we will emit event to client for real time update of visitor list without refreshing the page
     socket.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
 
 #ipconfig | findstr "IPv4"

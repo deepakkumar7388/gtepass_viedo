@@ -28,7 +28,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class UserManagementViewUser : AppCompatActivity() {
+class UserManagementViewUser : BaseActivity() {
 
     private lateinit var img: ImageView
     private lateinit var name: EditText
@@ -427,7 +427,7 @@ class UserManagementViewUser : AppCompatActivity() {
                     } else {
                         val errorMessage = LoginUserDataHolder.getErrorMessage(response)
                         runOnUiThread {
-                            Toast.makeText(this@UserManagementViewUser, "Failed to edit: $errorMessage", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@UserManagementViewUser, LoginUserDataHolder.getErrorMessage(response), Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -442,4 +442,7 @@ class UserManagementViewUser : AppCompatActivity() {
         }
     }
 
+    override fun onResume(){
+        super.onResume()
+    }
 }

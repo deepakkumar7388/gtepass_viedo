@@ -25,7 +25,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class UserHistory : AppCompatActivity() {
+class UserHistory : BaseActivity() {
     private var search: SearchView? = null
     private lateinit var toggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
 
@@ -435,5 +435,9 @@ class UserHistory : AppCompatActivity() {
             else downloadExcelFile(fileName.text.toString())
             dialog.dismiss()
         }
+    }
+
+    override fun onResume(){
+        super.onResume()
     }
 }

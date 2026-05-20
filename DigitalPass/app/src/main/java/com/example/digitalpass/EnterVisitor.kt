@@ -45,7 +45,7 @@ import androidx.core.view.isGone
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 
-class EnterVisitor : AppCompatActivity() {
+class EnterVisitor : BaseActivity() {
     lateinit var image: ImageView
     lateinit var editButton: ImageView
     lateinit var name: EditText
@@ -609,4 +609,7 @@ override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) 
         })
     }
 
+    override fun onResume(){
+        super.onResume()
+    }
 }

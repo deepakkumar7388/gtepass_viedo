@@ -23,7 +23,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class AddUser : AppCompatActivity() {
+class AddUser : BaseActivity() {
 
     private lateinit var name: EditText
     private lateinit var email: EditText
@@ -325,5 +325,9 @@ class AddUser : AppCompatActivity() {
                 }
             })
         }
+    }
+
+    override fun onResume(){
+        super.onResume()
     }
 }

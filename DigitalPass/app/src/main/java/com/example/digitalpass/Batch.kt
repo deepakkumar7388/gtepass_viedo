@@ -20,7 +20,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class Batch : AppCompatActivity() {
+class Batch : BaseActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private var allBatchList = ArrayList<String>()
@@ -63,7 +63,7 @@ class Batch : AppCompatActivity() {
         progressBar=findViewById(R.id.customProgressBar)
 
 
-        LoginUserDataHolder.campusForBatchOperation=intent.getStringExtra("campusName")!!
+        LoginUserDataHolder.setCampusForBatch(this, intent.getStringExtra("campusName")!!)
 
         val createNewBatch = findViewById<FloatingActionButton>(R.id.createNewBatch)
         createNewBatch.setOnClickListener {
@@ -80,6 +80,7 @@ class Batch : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
         progressBar?.startProgressBar()
         CoroutineScope(Dispatchers.IO).launch {
             val callForAllBatch = RetrofitClient.instance.getAllBatches(hashMapOf(

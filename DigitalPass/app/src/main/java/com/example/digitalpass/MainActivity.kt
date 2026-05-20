@@ -26,12 +26,7 @@ class MainActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            // 1. Get the Keyboard (IME) insets
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-
-            // 2. Calculate the bottom padding.
-            // It should be the height of the keyboard OR the system navigation bar, whichever is larger.
             val bottomPadding = if (imeInsets.bottom > 0) imeInsets.bottom else systemBars.bottom
 
             v.setPadding(
@@ -40,49 +35,11 @@ class MainActivity : AppCompatActivity() {
                 systemBars.right,
                 bottomPadding
             )
-
             insets
         }
 
         progressBar = findViewById(R.id.customProgressBar)
-
-        // Check for existing token
         val sharedPreferences = getSharedPreferences("DigitalPassPrefs", Context.MODE_PRIVATE)
-        val token = sharedPreferences.getString("token", null)
-
-
-        if (token != null) {
-            progressBar.startProgressBar()
-            // token exists so call an api to get user data
-            val loginWithToken = RetrofitClient.instance.loginUser(LoginData("", token))
-            loginWithToken.enqueue(object : Callback<HashMap<String, String>> {
-                override fun onResponse(
-                    call: Call<HashMap<String, String>?>,
-                    response: Response<HashMap<String, String>?>
-                ) {
-
-                    if (response.isSuccessful) {
-                        val responseBody = response.body()
-                        LoginUserDataHolder.loginUserData = responseBody
-                        LoginUserDataHolder.token = token
-                        navigateToDashboard(responseBody!!["role"])
-
-                    } else {
-                        Toast.makeText(this@MainActivity, "Enter your email and password", Toast.LENGTH_SHORT).show()
-                    }
-
-                    progressBar.stopAnimation()
-                }
-
-                override fun onFailure(
-                    call: Call<HashMap<String, String>?>,
-                    t: Throwable
-                ) {
-                    progressBar.stopAnimation()
-                    Toast.makeText(this@MainActivity, "Error connecting to server", Toast.LENGTH_SHORT).show()
-                }
-            })
-        }
 
         val loginButton = findViewById<Button>(R.id.loginButton)
         val email = findViewById<EditText>(R.id.loginEmail)
@@ -110,7 +67,6 @@ class MainActivity : AppCompatActivity() {
                     call: Call<HashMap<String, String>>,
                     response: Response<HashMap<String, String>>
                 ) {
-
                     if (response.isSuccessful) {
                         val responseBody = response.body()
                         if (responseBody != null) {
@@ -124,15 +80,16 @@ class MainActivity : AppCompatActivity() {
                             
                             if (receivedToken != null) {
                                 LoginUserDataHolder.token = receivedToken
+                                // Persist full user state so it survives process death
+                                LoginUserDataHolder.saveState(this@MainActivity)
                                 LoginUserDataHolder.storeFCMToken()
-                                getPermission()
                                 createNotificationChannel()
+                                getPermission()
                             }
                         }
                     } else {
                         Toast.makeText(this@MainActivity, "Login Failed", Toast.LENGTH_SHORT).show()
                     }
-
                     progressBar.stopAnimation()
                 }
 

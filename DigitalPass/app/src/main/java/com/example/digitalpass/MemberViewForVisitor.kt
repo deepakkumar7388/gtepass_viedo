@@ -11,7 +11,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
 
-class MemberViewForVisitor : AppCompatActivity() {
+class MemberViewForVisitor : BaseActivity() {
     private lateinit var member: HashMap<String, String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
