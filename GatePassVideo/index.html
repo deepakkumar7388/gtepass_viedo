@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SISTec Digital Gate Pass – Journey Video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;700&family=Inter:wght@300;400;600;800&family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- CONTROLS -->
+  <div id="controls">
+    <button id="btn-play" onclick="startShow()">▶ Play</button>
+    <button id="btn-restart" onclick="restartShow()">↺ Restart</button>
+    <button id="btn-download" onclick="downloadVideo()">⬇ Download</button>
+  </div>
+  <p id="controls-hint">⚠️ <b style="color:#ff3c3c">Download Video</b> → Select <b>"This Tab"</b> → ✅ Check <b style="color:#00ff88">"Also share tab audio"</b> → Share (Voice तभी आएगी!)</p>
+
+  <!-- SCALING WRAPPER: renders at 1080x1920 internally, scales to fit -->
+  <div id="stage-wrapper">
+
+  <!-- STAGE 9:16 -->
+  <div id="stage">
+
+    <!-- ANIMATED BG LAYERS -->
+    <canvas id="bg-canvas"></canvas>
+    <div id="grid-overlay"></div>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="orb orb4"></div>
+    <div id="vignette"></div>
+    <div id="scan-line"></div>
+
+    <!-- GLOBAL PROGRESS BAR -->
+    <div id="progress-bar-wrap">
+      <div id="progress-bar-fill"></div>
+    </div>
+
+    <!-- STEP DOTS — 6 steps -->
+    <div id="step-dots">
+      <div class="step-dot" id="dot1"></div>
+      <div class="step-dot-line" id="dotl1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot-line" id="dotl2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot-line" id="dotl3"></div>
+      <div class="step-dot" id="dot4"></div>
+      <div class="step-dot-line" id="dotl4"></div>
+      <div class="step-dot" id="dot5"></div>
+      <div class="step-dot-line" id="dotl5"></div>
+      <div class="step-dot" id="dot6"></div>
+    </div>
+
+    <!-- TRANSITIONS -->
+    <div id="flash"></div>
+    <div id="wipe"></div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  SCENE: INTRO                    ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-intro" class="scene">
+      <div class="accent-shape as1"></div>
+      <div class="accent-shape as2"></div>
+      <div class="intro-rings">
+        <div class="iring r1"></div>
+        <div class="iring r2"></div>
+        <div class="iring r3"></div>
+      </div>
+      <div id="intro-top-badge"><span class="brand-caps">SIST</span><span class="brand-lower">ec</span> • CSE DEPARTMENT</div>
+      <div id="intro-logo-wrap">
+        <div id="intro-logo-circle">
+          <img id="intro-dlogo" src="../VideoPromo/assets/Dlogo.png" alt="SISTec" />
+        </div>
+        <div id="intro-brand"><span class="brand-caps">SIST</span><span class="brand-lower">ec</span></div>
+        <div id="intro-product">DIGITAL GATE PASS</div>
+        <div id="intro-divider">
+          <div class="intro-div-line"></div>
+          <div class="intro-div-diamond">◆</div>
+          <div class="intro-div-line"></div>
+        </div>
+        <div id="intro-tagline">Smart Campus Exit — Step by Step</div>
+        <div id="intro-year">2026 – 27</div>
+      </div>
+      <div id="intro-bottom-text">Swipe to witness the journey →</div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 1: Login                   ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step1" class="scene" style="display:none">
+      <div class="scene-bg-label">01</div>
+      <div class="step-header">
+        <div class="step-chip" id="s1-chip">
+          <span class="chip-num">01</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow" id="s1-eyebrow">STUDENT ACTION</div>
+          <div class="step-title" id="s1-title">Login to App</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p1-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone1">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <!-- Login screen (default) -->
+            <img src="assets/s2_login.jpeg" alt="Login" class="pm-ss" id="ss1-login" />
+            <!-- Forgot Password: Email Verification screen -->
+            <img src="assets/verification.jpeg" alt="Forgot Password Verification" class="pm-ss fp-screen" id="ss1-verify" style="opacity:0;transform:rotateY(90deg)" />
+            <!-- Forgot Password: Create New Password screen -->
+            <img src="assets/create-paaword.jpeg" alt="Create New Password" class="pm-ss fp-screen" id="ss1-newpwd" style="opacity:0;transform:rotateY(90deg)" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+        <!-- Badge 1: Secure Login -->
+        <div class="float-badge fb-right" id="fb1" style="opacity:0">
+          <span class="fb-icon">🔐</span><span class="fb-text">Secure Login</span>
+        </div>
+        <!-- Badge 2: Forgot Password? -->
+        <div class="float-badge fb-left fp-badge" id="fb1-forgot" style="opacity:0">
+          <span class="fb-icon">🔑</span><span class="fb-text">Forgot Password?</span>
+        </div>
+        <!-- Badge 3: Email Sent -->
+        <div class="float-badge fb-right fp-badge" id="fb1-sent" style="opacity:0">
+          <span class="fb-icon">📧</span><span class="fb-text">Email Sent!</span>
+        </div>
+        <!-- Badge 4: Password Updated -->
+        <div class="float-badge fp-badge" id="fb1-done" style="opacity:0;left:50%;transform:translateX(-50%)">
+          <span class="fb-icon">✅</span><span class="fb-text">Password Updated!</span>
+        </div>
+      </div>
+
+      <!-- Tap animations -->
+      <div class="tap-pulse-wrap" id="tap1" style="opacity:0">
+        <div class="tap-ring t-ring1"></div>
+        <div class="tap-ring t-ring2"></div>
+        <div class="tap-dot"></div>
+        <div class="tap-label">tap</div>
+      </div>
+      <!-- Tap on Send button -->
+      <div class="tap-pulse-wrap" id="tap1-send" style="opacity:0">
+        <div class="tap-ring t-ring1"></div>
+        <div class="tap-ring t-ring2"></div>
+        <div class="tap-dot"></div>
+        <div class="tap-label">Send</div>
+      </div>
+      <!-- Tap on Update button -->
+      <div class="tap-pulse-wrap" id="tap1-update" style="opacity:0">
+        <div class="tap-ring t-ring1"></div>
+        <div class="tap-ring t-ring2"></div>
+        <div class="tap-dot"></div>
+        <div class="tap-label">Update</div>
+      </div>
+
+      <!-- Caption (updates dynamically) -->
+      <div class="step-caption" id="s1-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text" id="s1-cap-text">Student opens app and logs in securely</span>
+      </div>
+
+      <!-- Forgot Password sub-label overlay -->
+      <div id="fp-sublabel" style="opacity:0">
+        <span class="fp-sub-icon">🔑</span>
+        <span class="fp-sub-text">FORGOT PASSWORD FLOW</span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 2: Apply & Reason          ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step2" class="scene" style="display:none">
+      <div class="scene-bg-label">02</div>
+      <div class="step-header">
+        <div class="step-chip">
+          <span class="chip-num">02</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow">STUDENT ACTION</div>
+          <div class="step-title" id="s2-title">Apply for Pass</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p2-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone2">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <img src="assets/s3_apply.jpeg" alt="Apply" class="pm-ss" id="ss2-apply" />
+            <img src="assets/s4_apply_popup.jpeg" alt="Fill Reason" class="pm-ss" id="ss2-popup" style="opacity:0" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+        <div class="float-badge fb-left" id="fb2" style="opacity:0">
+          <span class="fb-icon">✍️</span><span class="fb-text">Fill Reason</span>
+        </div>
+      </div>
+      <div id="typing-chip" style="opacity:0">
+        <span class="tc-dot"></span><span class="tc-dot"></span><span class="tc-dot"></span>
+        <span class="tc-text">Typing reason…</span>
+      </div>
+      <div class="step-caption" id="s2-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text">Tap Apply → Enter reason → Submit request</span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 3: Pass Submitted          ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step3" class="scene" style="display:none">
+      <div class="scene-bg-label">03</div>
+      <div class="step-header">
+        <div class="step-chip">
+          <span class="chip-num">03</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow">SYSTEM STATUS</div>
+          <div class="step-title" id="s3-title">Pass Submitted</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p3-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone3">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <img src="assets/s8.jpeg" alt="Pass Submitted" class="pm-ss" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+        <div class="float-badge fb-right" id="fb3" style="opacity:0">
+          <span class="fb-icon">⏳</span><span class="fb-text">Awaiting Approval</span>
+        </div>
+      </div>
+      <div id="status-pill" style="opacity:0">
+        <span class="sp-dot"></span><span class="sp-text">PENDING APPROVAL</span>
+      </div>
+      <div class="step-caption" id="s3-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text">Request sent — status: <b>Pending</b></span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 4: TG Approves  ★ NEW      ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step4" class="scene" style="display:none">
+      <div class="scene-bg-label">04</div>
+      <div class="step-header">
+        <div class="step-chip">
+          <span class="chip-num">04</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow">TUTOR GUARDIAN</div>
+          <div class="step-title" id="s4-title">TG Approves</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p4-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone4">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <img src="assets/pending.png" alt="Deepak TG Pending" class="pm-ss" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+      </div>
+      <!-- TG Approve Burst -->
+      <div id="tg-burst" style="opacity:0">
+        <div class="burst-ring br1"></div>
+        <div class="burst-ring br2"></div>
+        <div class="burst-check tg-check">✓</div>
+        <div class="burst-sparks">
+          <div class="spark s1"></div><div class="spark s2"></div>
+          <div class="spark s3"></div><div class="spark s4"></div>
+          <div class="spark s5"></div><div class="spark s6"></div>
+        </div>
+        <div class="burst-label tg-label">TG APPROVED</div>
+      </div>
+      <div class="step-caption" id="s4-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text">The Tutor Guardian reviews and approves</span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 5: HOD Approves            ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step5" class="scene" style="display:none">
+      <div class="scene-bg-label">05</div>
+      <div class="step-header">
+        <div class="step-chip">
+          <span class="chip-num">05</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow">HOD ACTION</div>
+          <div class="step-title" id="s5-title">HOD Approves</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p5-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone5">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <img src="assets/pending.png" alt="HOD Approved View" class="pm-ss" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+      </div>
+      <!-- HOD Approve Burst -->
+      <div id="hod-burst" style="opacity:0">
+        <div class="burst-ring hbr1"></div>
+        <div class="burst-ring hbr2"></div>
+        <div class="burst-check hod-check">✓</div>
+        <div class="burst-sparks">
+          <div class="spark hs1"></div><div class="spark hs2"></div>
+          <div class="spark hs3"></div><div class="spark hs4"></div>
+          <div class="spark hs5"></div><div class="spark hs6"></div>
+        </div>
+        <div class="burst-label hod-label">HOD APPROVED</div>
+      </div>
+      <div class="step-caption" id="s5-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text">The HOD gives final approval</span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  STEP 6: Security & Exit         ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-step6" class="scene" style="display:none">
+      <div class="scene-bg-label">06</div>
+      <div class="step-header">
+        <div class="step-chip">
+          <span class="chip-num">06</span><span class="chip-slash">/</span><span class="chip-total">06</span>
+        </div>
+        <div class="step-label-wrap">
+          <div class="step-eyebrow">SECURITY GATE</div>
+          <div class="step-title" id="s6-title">Exit Campus</div>
+        </div>
+      </div>
+      <div class="phone-3d-wrap" id="p6-wrap">
+        <div class="phone-shadow"></div>
+        <div class="phone-mockup" id="phone6">
+          <div class="pm-speaker-top"></div>
+          <div class="pm-punch-hole"></div>
+          <div class="pm-screen">
+            <img src="assets/approved.png" alt="Deepak Approved Pass" class="pm-ss" />
+            <div class="screen-shine"></div>
+          </div>
+          <div class="pm-home-indicator"></div>
+          <div class="pm-glow"></div>
+        </div>
+        <div class="float-badge fb-right" id="fb6" style="opacity:0">
+          <span class="fb-icon">✅</span><span class="fb-text">Pass Verified!</span>
+        </div>
+      </div>
+      <div id="gate-anim" style="opacity:0">
+        <div class="gate-left"></div>
+        <div class="gate-right"></div>
+        <div class="gate-text">EXIT GRANTED</div>
+        <div class="gate-beam"></div>
+      </div>
+      <div class="step-caption" id="s6-cap">
+        <div class="cap-line"></div>
+        <span class="cap-text">Security scans pass — Gate opens automatically ✓</span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  SCENE: COMPLETE                 ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-complete" class="scene" style="display:none">
+      <div class="scene-bg-label" style="opacity:.03">★</div>
+      <div id="comp-burst-rings">
+        <div class="cb-ring r1"></div>
+        <div class="cb-ring r2"></div>
+        <div class="cb-ring r3"></div>
+      </div>
+      <div id="comp-check-wrap">
+        <div id="comp-check">✓</div>
+      </div>
+      <div id="comp-title">Journey Complete!</div>
+      <div id="comp-name">Deepak Kumar exited campus safely</div>
+      <div id="comp-flow">
+        <div class="cf-item" id="cf1"><div class="cf-num">1</div><div class="cf-lbl">Login</div></div>
+        <div class="cf-arrow" id="cfa1">›</div>
+        <div class="cf-item" id="cf2"><div class="cf-num">2</div><div class="cf-lbl">Apply</div></div>
+        <div class="cf-arrow" id="cfa2">›</div>
+        <div class="cf-item" id="cf3"><div class="cf-num">3</div><div class="cf-lbl">Submit</div></div>
+        <div class="cf-arrow" id="cfa3">›</div>
+        <div class="cf-item" id="cf4"><div class="cf-num">4</div><div class="cf-lbl">TG ✓</div></div>
+        <div class="cf-arrow" id="cfa4">›</div>
+        <div class="cf-item" id="cf5"><div class="cf-num">5</div><div class="cf-lbl">HOD ✓</div></div>
+        <div class="cf-arrow" id="cfa5">›</div>
+        <div class="cf-item" id="cf6"><div class="cf-num">6</div><div class="cf-lbl">Exit</div></div>
+      </div>
+      <div id="comp-badge">
+        <span id="cb-icon">⚡</span>
+        <span id="cb-text">Completed in <b>Under 2 Minutes</b></span>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  SCENE: OUTRO (CSS-only, no img) ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-outro" class="scene" style="display:none">
+      <!-- BG gradient layers -->
+      <div id="outro-bg-layer1"></div>
+      <div id="outro-bg-layer2"></div>
+
+      <!-- Animated geometric shapes -->
+      <div class="outro-shape os1"></div>
+      <div class="outro-shape os2"></div>
+      <div class="outro-shape os3"></div>
+      <div class="outro-shape os4"></div>
+
+      <!-- Central glow orb -->
+      <div id="outro-orb"></div>
+
+      <!-- Main content -->
+      <div id="outro-content">
+        <div id="outro-logo-ring">
+          <img id="outro-logo-img" src="../VideoPromo/assets/Dlogo.png" alt="SISTec" />
+        </div>
+        <div id="outro-sistec"><span class="brand-caps">SIST</span><span class="brand-lower">ec</span></div>
+        <div id="outro-title">Digital Gate Pass</div>
+        <div id="outro-tagline-bar">
+          <div class="otb-line"></div>
+          <div class="otb-text">Smart · Secure · Seamless</div>
+          <div class="otb-line"></div>
+        </div>
+        <div id="outro-dept-box">
+          <div id="odb-label">DEPARTMENT</div>
+          <div id="odb-name">Computer Science & Engineering</div>
+        </div>
+        <div id="outro-inst">Sagar Institute of Science Technology &amp; Engineering</div>
+        <div id="outro-year-badge">© 2026 – 27</div>
+      </div>
+
+      <!-- Bottom wave -->
+      <div id="outro-bottom-bar">
+        <div id="obb-text"><span class="brand-caps">SIST</span><span class="brand-lower">ec</span> • Digital Innovation • Campus Safety</div>
+      </div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║  SCENE: CREDITS (TEAM)           ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-credits" class="scene" style="display:none; padding:0; background:#0c1118; align-items:center; justify-content:flex-start; flex-direction:column; overflow:hidden;">
+      <img id="cred-photo" src="assets/group_photo_original.jpeg" alt="Development Team" style="width:100%; height:58%; object-fit:cover; object-position:center 50%; opacity:0; filter:brightness(1.02); z-index:0;" />
+      
+      <!-- Gradient overlay for smooth bleed -->
+      <div style="position:absolute; top:0; left:0; right:0; height:58%; background:linear-gradient(to bottom, transparent 93%, #0c1118 100%); pointer-events:none; z-index:1;"></div>
+      
+      <div id="cred-label" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; letter-spacing:0.28em; color:#1a73e8; text-transform:uppercase; opacity:0; margin-top:20px; z-index:2;">DEVELOPED BY</div>
+      <div id="cred-title" style="font-family:'Montserrat', sans-serif; font-size:40px; font-weight:900; letter-spacing:0.08em; color:#ffffff; opacity:0; line-height:1; text-transform:uppercase; z-index:2; margin-top:4px;">THE TEAM</div>
+      <div id="cred-rule" style="height:2px; background:linear-gradient(90deg, transparent, #1a73e8, #00c2ff, transparent); opacity:0; width:0; margin:10px 0 12px; z-index:2;"></div>
+      
+      <div id="cred-members" style="display:flex; flex-direction:column; gap:8px; width:88%; z-index:2;">
+        <div class="cred-member" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-num" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:rgba(255,255,255,0.28); letter-spacing:0.05em; min-width:24px;">01</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Yogesh Saini</span>
+        </div>
+        <div class="cred-member" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-num" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:rgba(255,255,255,0.28); letter-spacing:0.05em; min-width:24px;">02</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Deepak Kumar</span>
+        </div>
+        <div class="cred-member" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-num" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:rgba(255,255,255,0.28); letter-spacing:0.05em; min-width:24px;">03</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Sandeep Kumar Maurya</span>
+        </div>
+        <div class="cred-member" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-num" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:rgba(255,255,255,0.28); letter-spacing:0.05em; min-width:24px;">04</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Utkarsh Mani Mishra</span>
+        </div>
+      </div>
+      
+      <div id="cred-guide-label" style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; letter-spacing:0.28em; color:#1a73e8; text-transform:uppercase; opacity:0; margin-top:20px; z-index:2;">GUIDED BY</div>
+      <div id="cred-guide-title" style="font-family:'Montserrat', sans-serif; font-size:40px; font-weight:900; letter-spacing:0.08em; color:#ffffff; opacity:0; line-height:1; text-transform:uppercase; z-index:2; margin-top:4px;">THE MENTORS</div>
+      <div id="cred-guide-rule" style="height:2px; background:linear-gradient(90deg, transparent, #1a73e8, #00c2ff, transparent); opacity:0; width:0; margin:10px 0 12px; z-index:2;"></div>
+      
+      <div id="cred-guides" style="display:flex; flex-direction:column; gap:8px; width:88%; z-index:2;">
+        <div class="cred-guide" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-guide-bullet" style="font-size:18px; color:#1a73e8; opacity:0.8; min-width:24px;">✦</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Dr. Nikhlesh Pathik <span style="font-family:'Montserrat', sans-serif; font-size:14px; font-weight:700; color:#0c1118; background:linear-gradient(135deg, #1a73e8, #00c2ff); padding:3px 8px; border-radius:5px; margin-left:10px; text-transform:uppercase; letter-spacing:0.05em; display:inline-block; vertical-align:middle;">HOD</span></span>
+        </div>
+        <div class="cred-guide" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-guide-bullet" style="font-size:18px; color:#1a73e8; opacity:0.8; min-width:24px;">✦</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Prof. Ajit Kumar Shrivastava</span>
+        </div>
+        <div class="cred-guide" style="display:flex; align-items:center; gap:16px; padding:10px 18px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(255,255,255,0.15); border-radius:0 10px 10px 0; opacity:0;">
+          <span class="cred-guide-bullet" style="font-size:18px; color:#1a73e8; opacity:0.8; min-width:24px;">✦</span>
+          <span class="cred-name" style="font-family:'Montserrat', sans-serif; font-size:24px; font-weight:600; color:rgba(255,255,255,0.82); letter-spacing:0.02em; flex:1;">Prof. Himanshu Yadav</span>
+        </div>
+      </div>
+      
+      <div id="cred-footer" style="font-family:'Montserrat', sans-serif; font-size:16px; font-weight:500; color:rgba(255,255,255,0.18); letter-spacing:0.25em; text-transform:uppercase; margin-top:20px; margin-bottom:10px; opacity:0; z-index:2;">SISTec Digital Pass • 2026</div>
+    </div>
+
+    <!-- ╔══════════════════════════════════╗ -->
+    <!-- ║       SCENE: QR CODE                ║ -->
+    <!-- ╚══════════════════════════════════╝ -->
+    <div id="scene-qr" class="scene" style="display:none; padding: 0;">
+      <img src="assets/qr-to-download-app.jpeg" alt="Download SISTec Digital Gate Pass App" id="qr-full-poster" />
+    </div>
+
+  </div><!-- /stage -->
+  </div><!-- /stage-wrapper -->
+
+  <script src="fix-webm-duration.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

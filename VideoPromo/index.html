@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SISTec Digital Pass – Promo Video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;700;900&family=Inter:wght@300;400;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=4" />
+
+  <!-- GSAP — industry-standard animation engine (Alight Motion level quality) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+
+<body>
+
+  <!-- CONTROLS -->
+  <div id="controls">
+    <button id="btn-play" onclick="startShow()">▶ Play Preview</button>
+    <button id="btn-restart" onclick="restartShow()">↺ Restart</button>
+    <button id="btn-download" onclick="downloadVideo()">⬇ Download Video</button>
+  </div>
+  <p id="controls-hint">💡 Click <b>Download Video</b> → Select this tab → <b>Check "Also share tab audio"</b>
+    (mandatory for voice & music) → Click Share → Video auto-downloads.</p>
+
+  <!-- STAGE 9:16 -->
+  <div id="stage">
+
+    <div id="bg-morph"></div>
+    <canvas id="particles"></canvas>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div id="scanlines"></div>
+
+    <div class="streak s1"></div>
+    <div class="streak s2"></div>
+    <div class="streak s3"></div>
+
+    <!-- Color wipe -->
+    <div id="wipe"></div>
+
+    <!-- TOP TEXT -->
+    <div id="top-text">
+      <div id="tt-chip"><span id="tt-label"></span></div>
+      <div id="tt-title"></div>
+      <div id="tt-bar"></div>
+    </div>
+
+    <!-- 3D PHONE (Samsung S24 Ultra) -->
+    <div id="phone-scene">
+      <div id="phone-glow"></div>
+      <div id="phone-wrap">
+        <div id="phone-body">
+          <!-- Front Face -->
+          <div id="phone-front">
+            <div id="phone-notch">
+              <div id="phone-cam"></div>
+            </div>
+            <div id="phone-screen">
+              <img id="ss-a" class="ss" src="" alt="" />
+              <img id="ss-b" class="ss" src="" alt="" />
+              <div id="ss-empty">
+                <div class="se-icon">📱</div>
+                <div class="se-txt">Add screenshots to <code>assets/</code></div>
+              </div>
+              <div id="phone-sheen"></div>
+              <div id="phone-screenglow"></div>
+            </div>
+          </div>
+
+          <!-- Back Face -->
+          <div id="phone-back">
+            <div class="phone-back-cam-column">
+              <div class="back-cam">
+                <div class="back-lens"></div>
+              </div>
+              <div class="back-cam">
+                <div class="back-lens"></div>
+              </div>
+              <div class="back-cam">
+                <div class="back-lens"></div>
+              </div>
+            </div>
+            <div class="back-flash"></div>
+            <div class="back-logo">SISTec</div>
+          </div>
+
+          <!-- Left Side Face -->
+          <div class="phone-side phone-left"></div>
+
+          <!-- Right Side Face (contains physical buttons) -->
+          <div class="phone-side phone-right">
+            <div class="pbtn vol"></div>
+            <div class="pbtn pw"></div>
+          </div>
+
+          <!-- Top Side Face -->
+          <div class="phone-side phone-top"></div>
+
+          <!-- Bottom Side Face -->
+          <div class="phone-side phone-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOATING FEATURE BADGES (Alight Motion style) -->
+    <div id="badge-left" class="float-badge" style="display:none">
+      <span class="fb-icon" id="badge-left-icon"></span>
+      <span class="fb-label">
+        <span class="fb-title" id="badge-left-text"></span>
+        <span class="fb-sub" id="badge-left-sub"></span>
+      </span>
+    </div>
+    <div id="badge-right" class="float-badge" style="display:none">
+      <span class="fb-icon" id="badge-right-icon"></span>
+      <span class="fb-label">
+        <span class="fb-title" id="badge-right-text"></span>
+        <span class="fb-sub" id="badge-right-sub"></span>
+      </span>
+    </div>
+    <div id="badge-bottom" class="float-badge" style="display:none">
+      <span class="fb-icon" id="badge-bottom-icon"></span>
+      <span class="fb-label">
+        <span class="fb-title" id="badge-bottom-text"></span>
+        <span class="fb-sub" id="badge-bottom-sub"></span>
+      </span>
+    </div>
+
+    <!-- SPARKLE BURST (slide transition effect) -->
+    <div id="burst-container"></div>
+
+    <!-- BOTTOM TEXT -->
+    <div id="bottom-text">
+      <div id="bt-main"></div>
+      <div id="bt-sub"></div>
+    </div>
+
+    <div id="flash"></div>
+
+    <!-- INTRO -->
+    <div id="intro">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div id="intro-inner">
+        <div id="intro-icon"><img src="assets/Dlogo.png" alt="SISTec Logo" /></div>
+        <div id="intro-logo">SISTec <span>DIGITAL PASS</span></div>
+        <div id="intro-line"></div>
+        <div id="intro-tag">SMART GATE PASS FOR MODERN CAMPUSES</div>
+      </div>
+    </div>
+
+    <!-- OUTRO -->
+    <div id="outro">
+      <div id="outro-glow"></div>
+      <div id="outro-icon"><img src="assets/Dlogo.png" alt="SISTec Logo" /></div>
+      <div id="outro-logo">SISTec <span>DIGITAL PASS</span></div>
+      <div id="outro-rule"></div>
+      <div id="outro-badge">SECURE • SMART • EFFICIENT</div>
+      <div id="outro-headline">Go Paperless.<br />Go Digital.</div>
+      <div id="outro-btn">Get Started Today</div>
+      <div id="outro-footer">sistec.ac.in</div>
+    </div>
+
+    <!-- CREDITS -->
+    <div id="credits">
+      <div id="cred-bg-glow"></div>
+      <div id="cred-photo-ring"></div>
+      <img id="cred-photo" src="assets/group_photo_original.jpeg" alt="Development Team" />
+      <div id="cred-photo-spacer"></div>
+      <div id="cred-label">DEVELOPED BY</div>
+      <div id="cred-title">THE TEAM</div>
+      <div id="cred-rule"></div>
+      <div id="cred-members">
+        <div class="cred-member">
+          <span class="cred-num">01</span>
+          <span class="cred-name">Yogesh Saini</span>
+        </div>
+        <div class="cred-member">
+          <span class="cred-num">02</span>
+          <span class="cred-name">Deepak Kumar</span>
+        </div>
+        <div class="cred-member">
+          <span class="cred-num">03</span>
+          <span class="cred-name">Sandeep Kumar Maurya</span>
+        </div>
+        <div class="cred-member">
+          <span class="cred-num">04</span>
+          <span class="cred-name">Utkarsh Mani Mishra</span>
+        </div>
+      </div>
+      <div id="cred-guide-label">GUIDED BY</div>
+      <div id="cred-guide-title">THE MENTORS</div>
+      <div id="cred-guide-rule"></div>
+      <div id="cred-guides">
+        <div class="cred-guide">
+          <span class="cred-guide-bullet">✦</span>
+          <span class="cred-name">Dr. Nikhlesh Pathik <span class="cred-guide-badge">HOD</span></span>
+        </div>
+        <div class="cred-guide">
+          <span class="cred-guide-bullet">✦</span>
+          <span class="cred-name">Prof. Ajit Kumar Shrivastava</span>
+        </div>
+        <div class="cred-guide">
+          <span class="cred-guide-bullet">✦</span>
+          <span class="cred-name">Prof. Himanshu Yadav</span>
+        </div>
+      </div>
+      <div id="cred-footer">SISTec Digital Pass • 2026</div>
+    </div>
+
+  </div>
+
+  <script src="fix-webm-duration.js"></script>
+  <script src="script.js?v=15"></script>
+</body>
+
+</html>

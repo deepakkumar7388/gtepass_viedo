@@ -1,0 +1,1187 @@
+/* ═══════════════════════════════════════════════════════════
+   DIGITALPASS PROMO — GSAP POWERED (Alight Motion Level)
+   ═══════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #f8fafc;
+  --a1: #1a73e8;
+  /* SISTec Blue */
+  --a2: #7c3aed;
+  /* SISTec Purple */
+  --a3: #00c2ff;
+  --g: #ffaa00;
+  --w: #0f172a;
+  /* Slate-900 dark text for readability on light BG */
+  --dim: rgba(15, 23, 42, .6);
+  /* Dark semi-transparent for subtitles */
+  --pw: 230px;
+  /* Larger phone for sharper screenshot rendering */
+  --ph: 468px;
+  /* Proportional height (aspect ~1:2.03) */
+  --pr: 9px;
+  /* Sharp corners for Samsung S24 Ultra */
+}
+
+html,
+body {
+  min-height: 100vh;
+  width: 100%;
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── CONTROLS ── */
+#controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 18px 20px 6px;
+  max-width: 500px;
+  width: 100%;
+}
+
+#controls button {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: .04em;
+  transition: transform .12s, box-shadow .12s;
+}
+
+#controls button:hover {
+  transform: scale(1.06);
+  box-shadow: 0 4px 20px rgba(92, 107, 255, .4);
+}
+
+#btn-play {
+  background: linear-gradient(135deg, var(--a1), var(--a2));
+  color: #fff;
+}
+
+#btn-restart {
+  background: #1a1a2e;
+  color: #888;
+  border: 1px solid #2a2a3e;
+}
+
+#btn-download {
+  background: linear-gradient(135deg, #059669, #0d9488);
+  color: #fff;
+}
+
+#btn-download:disabled {
+  opacity: .7;
+  cursor: wait;
+}
+
+#controls-hint {
+  font-size: 11px;
+  color: #444;
+  padding: 0 20px 14px;
+  max-width: 500px;
+  width: 100%;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════
+   STAGE  9:16 vertical
+   ═══════════════════════════════════════════════════ */
+#stage {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .05),
+    0 0 60px rgba(26, 115, 232, .08),
+    0 30px 70px rgba(0, 0, 0, .15);
+  margin: 0 auto 40px;
+  flex-shrink: 0;
+  /* GPU isolation — prevents page repaints during slide animations */
+  contain: layout style paint;
+  isolation: isolate;
+}
+
+#bg-morph {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: .12;
+  /* reduced from .5 to make background less busy */
+  pointer-events: none;
+}
+
+#scanlines {
+  display: none;
+  /* Disabled to prevent compression artifacts and improve video quality */
+}
+
+/* Blobs (optimized with GPU acceleration) */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: .008;
+  /* reduced from .025 for a super subtle background wash */
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.b1 {
+  width: 270px;
+  height: 270px;
+  background: var(--a1);
+  top: -90px;
+  left: -55px;
+}
+
+.b2 {
+  width: 240px;
+  height: 240px;
+  background: var(--a2);
+  bottom: -75px;
+  right: -55px;
+}
+
+.b3 {
+  width: 160px;
+  height: 160px;
+  background: var(--a3);
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Light streaks */
+.streak {
+  position: absolute;
+  width: 220%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, .35) 40%, rgba(255, 255, 255, .55) 50%, rgba(255, 255, 255, .3) 60%, transparent 100%);
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(1px);
+  will-change: left, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+.s1 {
+  top: 18%;
+  left: -120%;
+  transform: rotate(-22deg);
+}
+
+.s2 {
+  top: 52%;
+  left: -120%;
+  transform: rotate(-18deg);
+}
+
+.s3 {
+  top: 77%;
+  left: -120%;
+  transform: rotate(-26deg);
+}
+
+/* Color wipe — GSAP animates clip-path */
+#wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  clip-path: inset(0 100% 0 0);
+  opacity: 0;
+  will-change: clip-path, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* ═══════════════════════════════════════════════════
+   FLOATING FEATURE BADGES (Alight Motion style)
+   ═══════════════════════════════════════════════════ */
+.float-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  padding: 7px 12px 7px 7px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  z-index: 9;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Colored icon square with rounded corners */
+.fb-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* background set by JS per-badge */
+}
+
+.fb-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: #fff;
+}
+
+.fb-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.fb-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.fb-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 7px;
+  font-weight: 500;
+  color: rgba(15, 23, 42, 0.45);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* Badge positions — GSAP overrides on animate per-slide via b.top */
+#badge-left {
+  top: 38%;
+  left: 12px;
+}
+
+#badge-right {
+  top: 53%;
+  right: 12px;
+}
+
+#badge-bottom {
+  top: 66%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Continuous float animation */
+@keyframes badgeFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════
+   SPARKLE BURST DOTS
+   ═══════════════════════════════════════════════════ */
+#burst-container {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.burst-dot {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════
+   TOP TEXT
+   ═══════════════════════════════════════════════════ */
+#top-text {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+#tt-chip {
+  padding: 4px 14px 4px 10px;
+  background: linear-gradient(135deg, var(--a1) 0%, var(--a2) 100%);
+  border-radius: 100px;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.18),
+    0 1px 4px rgba(0, 0, 0, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  /* GSAP animates this */
+}
+
+/* Dot accent inside chip */
+#tt-chip::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+#tt-label {
+  display: block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .24em;
+  color: rgba(255, 255, 255, 0.96);
+  text-transform: uppercase;
+}
+
+/* Title — GSAP splits into chars, each gets animated */
+#tt-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--w);
+  letter-spacing: .04em;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  min-height: 44px;
+}
+
+/* Each char span — GSAP sets initial state and animates */
+#tt-title .dp-char {
+  display: inline-block;
+  will-change: transform, opacity;
+  /* initial state set by GSAP: scale=3, y=-15, opacity=0 */
+}
+
+#tt-bar {
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, transparent, var(--a1), var(--a3), transparent);
+  border-radius: 2px;
+  opacity: 0;
+  /* GSAP animates width and opacity */
+}
+
+/* ═══════════════════════════════════════════════════
+   PHONE SCENE
+   ═══════════════════════════════════════════════════ */
+#phone-scene {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  width: var(--pw);
+  height: var(--ph);
+  perspective: 900px;
+}
+
+#phone-glow {
+  position: absolute;
+  inset: -18px;
+  border-radius: 52px;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.05) 0%, transparent 70%);
+  /* neutral soft slate shadow */
+  opacity: .3;
+  filter: blur(24px);
+  z-index: 0;
+}
+
+/* GSAP animates #phone-wrap (rotateY, rotateX, scale, y) */
+#phone-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+#phone-body {
+  position: relative;
+  width: var(--pw);
+  height: var(--ph);
+  transform-style: preserve-3d;
+  overflow: visible;
+}
+
+/* Front Face */
+#phone-front {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--pr) - 1px);
+  background: linear-gradient(155deg, #2a2d34 0%, #151619 50%, #0a0b0d 100%);
+  border: 1.5px solid rgba(15, 23, 42, 0.85);
+  transform: translateZ(9px);
+  transform-style: preserve-3d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .15),
+    inset 0 -1px 0 rgba(0, 0, 0, .3);
+  overflow: hidden;
+}
+
+/* Back Face */
+#phone-back {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--pr) - 1px);
+  background: linear-gradient(155deg, #1f2128 0%, #121316 50%, #08090a 100%);
+  border: 1.5px solid rgba(15, 23, 42, 0.9);
+  transform: translateZ(-9px) rotateY(180deg);
+  transform-style: preserve-3d;
+  box-shadow:
+    0 25px 55px rgba(0, 0, 0, 0.5);
+}
+
+/* 3D Side Planes - Brushed Titanium with highlight chamfers */
+.phone-side {
+  position: absolute;
+  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+.phone-left {
+  left: -9px;
+  width: 18px;
+  height: 100%;
+  top: 0;
+  transform: rotateY(-90deg);
+  background: linear-gradient(to bottom, #444952 0%, #1d1f24 40%, #0e0f12 60%, #262930 85%, #0a0b0d 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.phone-right {
+  right: -9px;
+  width: 18px;
+  height: 100%;
+  top: 0;
+  transform: rotateY(90deg);
+  transform-style: preserve-3d;
+  background: linear-gradient(to bottom, #444952 0%, #1d1f24 40%, #0e0f12 60%, #262930 85%, #0a0b0d 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.phone-top {
+  top: -9px;
+  height: 18px;
+  width: 100%;
+  left: 0;
+  transform: rotateX(90deg);
+  background: linear-gradient(to right, #1d1f24 0%, #444952 20%, #0e0f12 50%, #444952 80%, #1d1f24 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.phone-bottom {
+  bottom: -9px;
+  height: 18px;
+  width: 100%;
+  left: 0;
+  transform: rotateX(-90deg);
+  background: linear-gradient(to right, #1d1f24 0%, #444952 20%, #0e0f12 50%, #444952 80%, #1d1f24 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Back Camera Layout */
+.phone-back-cam-column {
+  position: absolute;
+  top: 28px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.back-cam {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0f1012;
+  border: 1.8px solid #5a5d64; /* Titanium ring */
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.8),
+    0 1px 2px rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-lens {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a202c 0%, #090b0e 70%);
+  border: 0.8px solid #1c2331;
+  box-shadow: inset 0 0 3px rgba(0, 194, 255, 0.4); /* camera lens coating sheen */
+}
+
+.back-flash {
+  position: absolute;
+  top: 48px;
+  left: 48px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fef08a; /* soft yellow led */
+  border: 1px solid #71717a;
+  box-shadow: 0 0 4px rgba(254, 240, 138, 0.6);
+}
+
+.back-logo {
+  position: absolute;
+  bottom: 35px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.12); /* subtle branding */
+}
+
+/* Side buttons inside the right 3D face */
+.phone-right .pbtn {
+  position: absolute;
+  left: 7.5px; /* Centered along the 18px width */
+  width: 3px;
+  background: #22252a;
+  border: 1px solid #0c0d0f;
+  border-radius: 2px;
+  transform: translateZ(1.5px); /* Protrude slightly from the edge */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.phone-right .vol {
+  top: 74px;
+  height: 38px;
+}
+
+.phone-right .pw {
+  top: 122px;
+  height: 20px;
+}
+
+/* Centered circular punch-hole camera for S24 Ultra (very tiny to prevent header text occlusion) */
+#phone-notch {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  background: #08080c;
+  border-radius: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#phone-cam {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #111827;
+  border: 0.3px solid rgba(255, 255, 255, .25);
+}
+
+#phone-screen {
+  position: absolute;
+  top: 5px;
+  left: 4px;
+  right: 4px;
+  bottom: 5px;
+  /* slim S24 bezels */
+  border-radius: calc(var(--pr) - 3px);
+  overflow: hidden;
+  background: #05050d;
+  /* Isolate screenshot layer for GPU compositing */
+  contain: strict;
+  isolation: isolate;
+}
+
+.ss {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  border-radius: inherit;
+  opacity: 0;
+  z-index: 2;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimizeQuality;
+  image-rendering: high-quality;
+  /* crisp-edges intentionally removed — Lanczos upscaled 8K images need smooth bilinear rendering */
+}
+
+#ss-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(150deg, #f8fafc, #e2e8f0);
+}
+
+.se-icon {
+  font-size: 26px;
+  opacity: .22;
+}
+
+.se-txt {
+  font-size: 8px;
+  color: #475569;
+  text-align: center;
+  line-height: 1.6;
+}
+
+#phone-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(128deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .08) 28%, transparent 58%);
+  animation: sheen 5s ease-in-out infinite;
+}
+
+@keyframes sheen {
+
+  0%,
+  100% {
+    opacity: .9
+  }
+
+  50% {
+    opacity: .3
+  }
+}
+
+#phone-screenglow {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 30px rgba(26, 115, 232, .12);
+}
+
+#phone-homebar {
+  display: none;
+  /* Removed for Android style mockup */
+}
+
+/* ═══════════════════════════════════════════════════
+   BOTTOM TEXT
+   Phone: top:55%, height:468px, stage:640px
+   → Phone bottom = 55% + (234/640)*100% = 91.6%
+   → Footer starts at top: 92%
+   ═══════════════════════════════════════════════════ */
+#bottom-text {
+  position: absolute;
+  top: calc(92% - 40.5px);
+  bottom: 8.5px;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 8px;
+  pointer-events: none;
+  background: none;
+  /* no shadow, no scrim */
+}
+
+#bt-main {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  color: #054190;
+  /* brand blue */
+  text-align: center;
+  opacity: 0;
+}
+
+#bt-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #063bae;
+  /* vibrant sub-text blue */
+  letter-spacing: .1em;
+  text-align: center;
+  opacity: 0;
+}
+
+
+
+#flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   INTRO
+   ═══════════════════════════════════════════════════ */
+#intro {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #ffffff 0%, #f4f6fa 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, .06);
+}
+
+.r1 {
+  width: 150px;
+  height: 150px;
+}
+
+.r2 {
+  width: 240px;
+  height: 240px;
+  border-color: rgba(15, 23, 42, .04);
+}
+
+.r3 {
+  width: 330px;
+  height: 330px;
+  border-color: rgba(15, 23, 42, .02);
+}
+
+#intro-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#intro-icon {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 8px rgba(26, 115, 232, .25));
+}
+
+#intro-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#intro-logo {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: .04em;
+  color: var(--w);
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+  opacity: 0;
+}
+
+#intro-logo span {
+  color: var(--a1);
+}
+
+#intro-line {
+  width: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--a1), var(--a2), transparent);
+  opacity: 0;
+}
+
+#intro-tag {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--a2);
+  letter-spacing: .22em;
+  text-align: center;
+  opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   OUTRO
+   ═══════════════════════════════════════════════════ */
+#outro {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: radial-gradient(ellipse at center, #ffffff 0%, #f4f6fa 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#outro-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, .03) 0%, transparent 70%);
+}
+
+#outro-logo {
+  position: relative;
+  z-index: 1;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: .04em;
+  color: var(--w);
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+  opacity: 0;
+}
+
+#outro-logo span {
+  color: var(--a1);
+}
+
+#outro-rule {
+  width: 90px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--a2), var(--a1), transparent);
+  opacity: 0;
+}
+
+#outro-badge {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--a2);
+  letter-spacing: .28em;
+  opacity: 0;
+}
+
+#outro-headline {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: var(--w);
+  text-align: center;
+  line-height: 1.3;
+  letter-spacing: .04em;
+  opacity: 0;
+}
+
+#outro-footer {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  letter-spacing: .12em;
+  margin-top: 10px;
+  opacity: 0;
+}
+
+#outro-icon {
+  position: relative;
+  z-index: 1;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 8px rgba(26, 115, 232, .15));
+  opacity: 0;
+  margin-bottom: 2px;
+}
+
+#outro-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#outro-btn {
+  position: relative;
+  z-index: 1;
+  margin: 6px 0;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, var(--a1), var(--a2));
+  color: #ffffff;
+  border-radius: 30px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 15px rgba(26, 115, 232, 0.25);
+  opacity: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   CREDITS SLIDE — Simple & Professional
+   ═══════════════════════════════════════════════════ */
+#credits {
+  position: absolute;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  background: #0c1118;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Top half: full-width photo banner */
+#cred-bg-glow { display: none; }
+#cred-photo-ring { display: none; }
+#cred-photo-spacer { display: none; }
+
+#cred-photo {
+  width: 100%;
+  height: 58%;
+  object-fit: cover;
+  object-position: center 50%;
+  opacity: 0;
+  display: block;
+  position: static;
+  transform: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  filter: brightness(1.02);
+}
+
+/* Gradient overlay at the bottom of the photo for smooth bleed */
+#credits::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 58%;
+  background: linear-gradient(
+    to bottom,
+    transparent 93%,
+    #0c1118 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bottom half: text content */
+#cred-label,
+#cred-guide-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--a1);
+  text-transform: uppercase;
+  opacity: 0;
+  margin-top: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+#cred-title,
+#cred-guide-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  opacity: 0;
+  line-height: 1;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+  margin-top: 2px;
+}
+
+#cred-rule,
+#cred-guide-rule {
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--a1), var(--a3), transparent);
+  opacity: 0;
+  width: 0;
+  margin: 5px 0 6px;
+  position: relative;
+  z-index: 2;
+}
+
+#cred-members,
+#cred-guides {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 88%;
+  position: relative;
+  z-index: 2;
+}
+
+.cred-member,
+.cred-guide {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0 6px 6px 0;
+  opacity: 0;
+}
+
+.cred-num {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.05em;
+  min-width: 14px;
+}
+
+.cred-guide-bullet {
+  font-size: 8px;
+  color: var(--a1);
+  opacity: 0.8;
+  min-width: 14px;
+}
+
+.cred-guide-badge {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  color: #0c1118;
+  background: linear-gradient(135deg, var(--a1), var(--a3));
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.cred-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+
+#cred-footer {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  opacity: 0;
+  position: relative;
+  z-index: 2;
+}

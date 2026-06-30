@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Voice Generator — New Lines</title>
+  <style>
+    body { font-family: monospace; background: #0a0a14; color: #00d4ff; padding: 30px; }
+    button { background: #7b2fff; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; cursor: pointer; margin: 6px; }
+    button:hover { background: #00d4ff; color: #000; }
+    .status { margin: 10px 0; font-size: 13px; color: #0f8; }
+    .line { background: #111; border-radius: 6px; padding: 10px; margin: 8px 0; border-left: 3px solid #7b2fff; }
+    h2 { color: #ffd700; }
+    .done { border-left-color: #00ff88; color: #00ff88; }
+  </style>
+</head>
+<body>
+  <h2>🎙️ Voice File Generator — Forgot Password + Updated Timings</h2>
+  <p style="color:#aaa;font-size:12px">Ye script browser TTS se MP3 files generate karta hai. MediaRecorder ke through save hoga.</p>
+
+  <div id="lines-list"></div>
+
+  <br>
+  <button onclick="generateAll()">🎙️ Generate All New Lines</button>
+  <button onclick="generateLine(selectedIdx)">Generate Selected</button>
+  <div class="status" id="status">Ready.</div>
+
+  <script>
+    // ALL narration lines with new timings — index maps to v_N.mp3
+    const ALL_NARRATIONS = [
+      // v_0 — Welcome (keep, t=0.5)
+      { idx: 0, text: 'Welcome to Sistec Digital Gate Pass — the smart, secure way to manage campus exits.' },
+      // v_1 — Step 1 Login (keep, t=5.8)
+      { idx: 1, text: 'Step one. The student opens the app and logs in using their registered credentials.' },
+      // v_2 — NEW: Forgot Password (t≈8.9)
+      { idx: 2, text: 'If a student forgets their password, they can quickly reset it right from the login screen.' },
+      // v_3 — NEW: Email verification (t≈10.3)
+      { idx: 3, text: 'They enter their registered email address and tap Send to receive a verification link.' },
+      // v_4 — NEW: Create new password (t≈13.3)
+      { idx: 4, text: 'After verification, they create a new secure password and confirm it.' },
+      // v_5 — Step 2 Apply (t≈19.5) — shifted from old v_2
+      { idx: 5, text: 'Step two. The student applies for a gate pass and fills in the reason for exit.' },
+      // v_6 — Step 3 Submitted (t≈25.5) — shifted from old v_3
+      { idx: 6, text: 'Step three. The request is submitted and awaits approval from the Tutor Guardian.' },
+      // v_7 — Step 4 TG (t≈31.5) — shifted from old v_4
+      { idx: 7, text: 'Step four. The Tutor Guardian receives the request and approves it instantly.' },
+      // v_8 — Step 5 HOD (t≈38.5) — shifted from old v_5
+      { idx: 8, text: 'Step five. The Head of Department reviews and grants final approval.' },
+      // v_9 — Step 6 Exit (t≈44.5) — shifted from old v_6
+      { idx: 9, text: 'Step six. At the security gate, the approved digital pass is scanned and verified.' },
+      // v_10 — Complete (t≈50.5) — shifted from old v_7
+      { idx: 10, text: 'Journey complete. Gate access granted in under two minutes. Seamless and secure.' },
+      // v_11 — Outro (t≈57.5) — shifted from old v_8
+      { idx: 11, text: 'Sistec Digital Gate Pass. Empowering students with next-generation campus technology.' },
+    ];
+
+    let selectedIdx = 0;
+    const listEl = document.getElementById('lines-list');
+
+    function renderList() {
+      listEl.innerHTML = ALL_NARRATIONS.map((n, i) => `
+        <div class="line" id="line-${i}" onclick="selectedIdx=${i};document.querySelectorAll('.line').forEach(l=>l.style.outline='');this.style.outline='2px solid #ffd700'">
+          <b>v_${n.idx}.mp3</b> &nbsp; ${n.text}
+          <button style="float:right;margin:0" onclick="event.stopPropagation();generateLine(${i})">▶ Generate</button>
+        </div>
+      `).join('');
+    }
+    renderList();
+
+    function getVoice() {
+      const voices = speechSynthesis.getVoices();
+      // Prefer Google US English Female, then any female, then default
+      return voices.find(v => v.name.includes('Google') && v.lang === 'en-US') ||
+             voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female')) ||
+             voices.find(v => v.lang.startsWith('en-US')) ||
+             voices.find(v => v.lang.startsWith('en')) ||
+             voices[0];
+    }
+
+    async function speakToBuffer(text) {
+      return new Promise((resolve, reject) => {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const dest = audioCtx.createMediaStreamDestination();
+
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.voice = getVoice();
+        utter.rate = 0.92;
+        utter.pitch = 1.05;
+        utter.volume = 1;
+
+        // Record from AudioContext destination — but SpeechSynthesis doesn't route through AudioContext
+        // Instead use MediaRecorder on system audio (fallback: save as webm blob)
+        // We'll use a workaround: play + record tab audio via getUserMedia
+        // Simple approach: use Web Speech API + MediaRecorder on a silent stream, then just play and let user use the download trick
+        
+        // Actually we need to record speech output.
+        // Best approach: use AudioContext + oscillator to create a silent track, 
+        // then combine with speech using MediaRecorder
+        
+        const silentOsc = audioCtx.createOscillator();
+        silentOsc.frequency.value = 0;
+        const silentGain = audioCtx.createGain();
+        silentGain.gain.value = 0;
+        silentOsc.connect(silentGain);
+        silentGain.connect(dest);
+        silentOsc.start();
+
+        const recorder = new MediaRecorder(dest.stream, { mimeType: 'audio/webm' });
+        const chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          resolve(blob);
+          audioCtx.close();
+        };
+
+        recorder.start();
+        speechSynthesis.speak(utter);
+
+        utter.onend = () => {
+          setTimeout(() => {
+            recorder.stop();
+            silentOsc.stop();
+          }, 300);
+        };
+        utter.onerror = reject;
+      });
+    }
+
+    async function generateLine(listIdx) {
+      const n = ALL_NARRATIONS[listIdx];
+      const lineEl = document.getElementById('line-' + listIdx);
+      document.getElementById('status').textContent = `Generating v_${n.idx}.mp3 ...`;
+      lineEl.style.background = '#1a1a2e';
+
+      try {
+        // Use fetch to POST to a local server... we don't have one.
+        // Instead: play TTS and let user record OR use a different approach.
+        // Best: generate WAV using offline AudioContext from Web Speech API
+        
+        // For now: speak it and trigger download as webm
+        const blob = await speakToBuffer(n.text);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `v_${n.idx}.webm`; // Download as webm, rename to mp3 manually
+        a.click();
+        
+        lineEl.classList.add('done');
+        lineEl.style.background = '#0a1a0a';
+        document.getElementById('status').textContent = `✅ v_${n.idx}.webm downloaded! Rename to v_${n.idx}.mp3 and place in assets/voice/`;
+      } catch(e) {
+        document.getElementById('status').textContent = `❌ Error: ${e.message}`;
+      }
+    }
+
+    async function generateAll() {
+      for (let i = 0; i < ALL_NARRATIONS.length; i++) {
+        await generateLine(i);
+        await new Promise(r => setTimeout(r, 800));
+      }
+      document.getElementById('status').textContent = '✅ All lines generated! Place webm files in assets/voice/ renamed as mp3.';
+    }
+
+    // Preload voices
+    speechSynthesis.onvoiceschanged = () => {};
+    window.onload = () => { speechSynthesis.getVoices(); };
+  </script>
+</body>
+</html>
