@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>TTS Test</title></head>
+<body>
+  <button id="btn">Play TTS</button>
+  <script>
+    document.getElementById('btn').onclick = function() {
+      var audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q=Welcome+to+Sistec+Digital+Gate+Pass&tl=en-IN&client=tw-ob');
+      audio.play().then(() => console.log('Played!')).catch(e => console.error(e));
+    };
+  </script>
+</body>
+</html>
